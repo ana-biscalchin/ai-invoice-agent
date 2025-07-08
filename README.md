@@ -49,7 +49,7 @@ app/
 | --------------- | ----------------- |
 | Caixa Econômica | `CAIXA`           |
 | Nubank          | `NUBANK`          |
-| Banco do Brasil | `BANCO DO BRASIL` |
+
 
 ## 📚 Documentação
 
@@ -147,7 +147,7 @@ app/
 | --------------- | ----------------- |
 | Caixa Econômica | `CAIXA`           |
 | Nubank          | `NUBANK`          |
-| Banco do Brasil | `BANCO DO BRASIL` |
+
 
 ## 📚 Documentation
 
