@@ -13,21 +13,63 @@ from openai.types.chat.chat_completion_user_message_param import (
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = "gpt-4o-mini"
-SYSTEM_PROMPT = (
-    "You are an extraction engine that reads Brazilian credit-card invoices "
-    "in plain text and returns valid JSON (no prose). "
-    "Rules: "
-    "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
-    '• Classify each as "debit" (money spent) or "credit" (payment, refund/estorno). '
-    '  Payments that settle the previous invoice are still "credit". '
-    "• Ignore totals, summaries, parcelamento options, limits. "
-    "• Dates → YYYY-MM-DD; amounts → positive numbers. "
-    '• "Parcela X/Y" → current_installment=X, installments=Y; else 1/1. '
-    "• total_purchase_amount = amount * installments. "
-    "• due_date = invoice due date (top of document) and must be copied into every transaction. "
-    "• invoice_total = Σ(debits) – Σ(credits). "
-    "Return JSON exactly like the example."
-)
+
+# Prompts por instituição
+INSTITUTION_PROMPTS = {
+    "NUBANK": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Nubank in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "  2. Ignore any line in the 'Pagamentos' section or whose description starts with "
+        "'Pagamento em', 'Pagamento recebido', 'Pagamento efetuado'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• 'Insta X/Y' → current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example."
+    ),
+    "CAIXA": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Caixa Econômica Federal in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• If installment info appears as 'Parcela X/Y', set current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example."
+    ),
+    "BANCO DO BRASIL": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Banco do Brasil in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• If installment info appears as 'Parcela X/Y', set current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example."
+    ),
+    "GENERIC": (
+        "You are an extraction engine that reads Brazilian credit-card invoices in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• If installment info appears as 'X/Y', set current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example."
+    ),
+}
 
 JSON_EXAMPLE = """
 {
@@ -72,11 +114,24 @@ class OpenAIProvider(AIProvider):
     def provider_name(self) -> str:
         return "openai"
 
+    def detect_institution(self, text: str) -> str:
+        """Detects the financial institution from the invoice text."""
+        text_upper = text.upper()
+        if "NUBANK" in text_upper:
+            return "NUBANK"
+        if "CAIXA" in text_upper or "CAIXA ECONOMICA" in text_upper:
+            return "CAIXA"
+        if "BANCO DO BRASIL" in text_upper or "BANCO DO BRASIL S.A." in text_upper:
+            return "BANCO DO BRASIL"
+        return "GENERIC"
+
     async def extract_transactions(self, text: str):
         try:
+            institution = self.detect_institution(text)
+            prompt = INSTITUTION_PROMPTS.get(institution, INSTITUTION_PROMPTS["GENERIC"])
             messages = [
                 ChatCompletionSystemMessageParam(
-                    role="system", content=SYSTEM_PROMPT + "\nExample:" + JSON_EXAMPLE
+                    role="system", content=prompt + "\nExample:" + JSON_EXAMPLE
                 ),
                 ChatCompletionUserMessageParam(role="user", content=text[:8000]),
             ]
@@ -115,7 +170,7 @@ class OpenAIProvider(AIProvider):
                     )
                 )
 
-            self.logger.info(f"Extracted {len(transactions)} transactions")
+            self.logger.info(f"Extracted {len(transactions)} transactions for {institution}")
             return transactions, invoice_total, due_date
 
         except Exception as e:

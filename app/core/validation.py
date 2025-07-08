@@ -9,13 +9,13 @@ class TransactionValidator:
         self.transactions = transactions
         self.reference_date = reference_date
         self.results = {}
+        self.errors = []
 
     def validate_required_fields(self) -> bool:
         for t in self.transactions:
             if not t.transaction_date or not t.description or t.amount is None:
-                print(f"[VALIDATION] Missing required fields in transaction: {t}")
+                self.errors.append(f"Missing required fields in transaction: {t}")
                 return False
-            print(f"[VALIDATION] Required fields validated")
         return True
 
     def validate_no_duplicates(self) -> bool:
@@ -23,10 +23,9 @@ class TransactionValidator:
         for t in self.transactions:
             key = (t.transaction_date, t.amount, t.description.strip().lower())
             if key in seen:
-                print(f"[VALIDATION] Duplicate transaction found: {t}")
+                self.errors.append(f"Duplicate transaction found: {t}")
                 return False
             seen.add(key)
-            print(f"[VALIDATION] No duplicates validated")
         return True
 
     def validate_dates(self) -> bool:
@@ -36,11 +35,10 @@ class TransactionValidator:
                 t.transaction_date > self.reference_date.date()
                 or t.transaction_date > now
             ):
-                print(
-                    f"[VALIDATION] Invalid transaction date: {t.transaction_date} in transaction: {t}"
+                self.errors.append(
+                    f"Invalid transaction date: {t.transaction_date} in transaction: {t}"
                 )
                 return False
-        print(f"[VALIDATION] Dates validated")
         return True
 
     def validate_transactions_sum(
@@ -48,19 +46,17 @@ class TransactionValidator:
     ) -> bool:
         total = 0.0
         for t in self.transactions:
-            print(f"[VALIDATION] Transaction: {t}")
             if getattr(t, "type", None) == TransactionType.CREDIT:
-                print(f"[VALIDATION] Credit transaction: {t.amount}")
                 total -= t.amount
             else:
-                print(f"[VALIDATION] Debit transaction: {t.amount}")
                 total += t.amount
         if abs(total - invoice_total) <= tolerance:
-            print(f"[VALIDATION] Sum validated")
+            print(f"[VALIDATION] Sum validated: {total} == {invoice_total}")
             return True
-        print(
-            f"[VALIDATION] Sum mismatch: calculated {total}, expected {invoice_total}"
+        self.errors.append(
+            f"Sum mismatch: calculated {total}, expected {invoice_total}"
         )
+        print(f"[VALIDATION] Sum mismatch: calculated {total}, expected {invoice_total}")
         return False
 
     def validate_amount_range(
@@ -68,11 +64,10 @@ class TransactionValidator:
     ) -> bool:
         for t in self.transactions:
             if not (min_value <= t.amount <= max_value):
-                print(
-                    f"[VALIDATION] Transaction amount out of range: {t.amount} in transaction: {t}"
+                self.errors.append(
+                    f"Transaction amount out of range: {t.amount} in transaction: {t}"
                 )
                 return False
-        print(f"[VALIDATION] Amount range validated")
         return True
 
     def validate_installments_consistency(self) -> bool:
@@ -80,11 +75,10 @@ class TransactionValidator:
             if t.installments > 1:
                 expected_total = t.amount * t.installments
                 if abs(t.total_purchase_amount - expected_total) > 0.01:
-                    print(
-                        f"[VALIDATION] Installments inconsistency: {t.total_purchase_amount} != {t.amount} * {t.installments} in transaction: {t}"
+                    self.errors.append(
+                        f"Installments inconsistency: {t.total_purchase_amount} != {t.amount} * {t.installments} in transaction: {t}"
                     )
                     return False
-        print(f"[VALIDATION] Installments consistency validated")
         return True
 
     def validate_due_date_consistency(self) -> bool:
@@ -93,14 +87,14 @@ class TransactionValidator:
             if expected_due_date is None:
                 expected_due_date = t.due_date
             if t.due_date != expected_due_date:
-                print(
-                    f"[VALIDATION] Due date inconsistency: {t.due_date} != {expected_due_date} in transaction: {t}"
+                self.errors.append(
+                    f"Due date inconsistency: {t.due_date} != {expected_due_date} in transaction: {t}"
                 )
                 return False
-        print(f"[VALIDATION] Due date consistency validated")
         return True
 
     def run_all(self, invoice_total: Optional[float] = None) -> dict:
+        self.errors = []
         checks = {
             "required_fields": self.validate_required_fields(),
             "no_duplicates": self.validate_no_duplicates(),
@@ -113,5 +107,4 @@ class TransactionValidator:
             checks["sum_valid"] = self.validate_transactions_sum(invoice_total)
         self.results = checks
         score = sum(checks.values()) / len(checks)
-        print(f"[VALIDATION] Confidence score: {score:.2f}")
-        return {"score": score, "details": checks}
+        return {"score": score, "details": checks, "errors": self.errors.copy()}

@@ -52,6 +52,16 @@ Readiness check for container orchestration.
 
 Process a credit card invoice PDF and extract structured transaction data.
 
+**Validation rules applied to each transaction:**
+
+- Required fields: Each transaction must have date, description, and amount.
+- No duplicates: Transactions with same date, amount, and description are not allowed.
+- Valid dates: Transaction date cannot be in the future or after the invoice due date.
+- Amount range: Each amount must be between 0.01 and 100,000.
+- Installments consistency: If installments > 1, total_purchase_amount must equal amount \* installments.
+- Due date consistency: All transactions must have the same due date.
+- Sum validation: The sum of all debits minus credits must match the invoice total (tolerance: 0.01).
+
 **Request:**
 
 - **Content-Type:** `multipart/form-data`
@@ -74,7 +84,8 @@ Process a credit card invoice PDF and extract structured transaction data.
     "total_transactions": 1,
     "confidence_score": 0.95,
     "provider": "openai"
-  }
+  },
+  "errors": ["Sum mismatch: calculated 100.0, expected 99.99"]
 }
 ```
 

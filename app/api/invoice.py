@@ -19,11 +19,20 @@ async def process_invoice(file: UploadFile = File(...)):
     """
     Process credit card invoice PDF and extract transactions.
 
+    **Validation rules applied to each transaction:**
+    - Required fields: Each transaction must have date, description, and amount.
+    - No duplicates: Transactions with same date, amount, and description are not allowed.
+    - Valid dates: Transaction date cannot be in the future or after the invoice due date.
+    - Amount range: Each amount must be between 0.01 and 100,000.
+    - Installments consistency: If installments > 1, total_purchase_amount must equal amount * installments.
+    - Due date consistency: All transactions must have the same due date.
+    - Sum validation: The sum of all debits minus credits must match the invoice total (tolerance: 0.01).
+
     Args:
         file: PDF file upload (max 10MB)
 
     Returns:
-        Structured transaction data with metadata
+        Structured transaction data with metadata and validation errors (if any)
 
     Raises:
         HTTPException: For validation or processing errors
@@ -68,6 +77,7 @@ async def process_invoice(file: UploadFile = File(...)):
 
         # Validate transactions with TransactionValidator
         confidence_score = 0.95
+        errors = None
         if invoice_total is not None and due_date is not None:
             from app.core.validation import TransactionValidator
             from datetime import datetime
@@ -80,6 +90,7 @@ async def process_invoice(file: UploadFile = File(...)):
             validator = TransactionValidator(transactions, due_date_obj)
             results = validator.run_all(invoice_total)
             confidence_score = results["score"]
+            errors = results.get("errors")
 
         # Calculate processing time
         processing_time_ms = int((time.time() - start_time) * 1000)
@@ -93,7 +104,7 @@ async def process_invoice(file: UploadFile = File(...)):
         )
 
         # Build response
-        response = InvoiceResponse(transactions=transactions, metadata=metadata)
+        response = InvoiceResponse(transactions=transactions, metadata=metadata, errors=errors if errors else None)
         return response
 
     except HTTPException:
