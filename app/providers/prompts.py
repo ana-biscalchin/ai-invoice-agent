@@ -21,7 +21,6 @@ INSTRUÇÕES:
 
 Retorne no formato JSON especificado.
 """,
-
     "NUBANK": """
 Você é um especialista em extrair dados de faturas do Nubank.
 
@@ -39,7 +38,6 @@ INSTRUÇÕES:
 
 Retorne no formato JSON especificado.
 """,
-
     "BANCO DO BRASIL": """
 Você é um especialista em extrair dados de faturas do Banco do Brasil.
 
@@ -56,7 +54,6 @@ INSTRUÇÕES:
 
 Retorne no formato JSON especificado.
 """,
-
     "GENERIC": """
 Você é um especialista em extrair dados de faturas de cartão de crédito.
 
@@ -72,7 +69,7 @@ INSTRUÇÕES:
 3. Retorne apenas JSON válido, sem explicações
 
 Retorne no formato JSON especificado.
-"""
+""",
 }
 
 # JSON example for all institutions
@@ -124,68 +121,76 @@ IMPORTANTE: Seja preciso e consistente com os dados extraídos.
 Verifique se a soma das transações bate com o total da fatura.
 """,
         "temperature": 0,
-        "max_tokens": 1800
+        "max_tokens": 1800,
     },
-    
     "deepseek": {
         "extra_instructions": """
 CRÍTICO: Retorne APENAS JSON válido, sem texto adicional, sem explicações, sem formatação markdown.
 Comece diretamente com { e termine com }.
+
+OBRIGATÓRIO: Inclua SEMPRE os campos:
+- "due_date" no nível da fatura (formato YYYY-MM-DD)
+- "due_date" em cada transação (pode ser o mesmo da fatura)
+- "invoice_total" com o valor total da fatura
+
+Se não conseguir identificar a data de vencimento, use uma data futura estimada no formato YYYY-MM-DD.
 """,
         "temperature": 0,
-        "max_tokens": 2000
-    }
+        "max_tokens": 2000,
+    },
 }
 
 
 def get_prompt_for_institution(institution: str, provider: str = "generic") -> str:
     """
     Get the appropriate prompt for a specific institution and provider.
-    
+
     Args:
         institution: Institution name (CAIXA, NUBANK, etc.)
         provider: AI provider name (openai, deepseek, etc.)
-        
+
     Returns:
         Complete prompt string ready for AI processing
     """
     # Get base prompt for institution
     base_prompt = INSTITUTION_PROMPTS.get(institution, INSTITUTION_PROMPTS["GENERIC"])
-    
+
     # Add provider-specific adjustments
-    provider_config = PROVIDER_ADJUSTMENTS.get(provider, PROVIDER_ADJUSTMENTS.get("generic", {}))
+    provider_config = PROVIDER_ADJUSTMENTS.get(
+        provider, PROVIDER_ADJUSTMENTS.get("generic", {})
+    )
     extra_instructions = provider_config.get("extra_instructions", "")
-    
+
     # Combine everything
-    full_prompt = base_prompt + "\n" + extra_instructions + "\n\nExample:" + JSON_EXAMPLE
-    
+    full_prompt = (
+        base_prompt + "\n" + extra_instructions + "\n\nExample:" + JSON_EXAMPLE
+    )
+
     return full_prompt
 
 
 def get_provider_config(provider: str) -> dict:
     """
     Get provider-specific configuration (temperature, max_tokens, etc.).
-    
+
     Args:
         provider: AI provider name
-        
+
     Returns:
         Configuration dictionary for the provider
     """
-    return PROVIDER_ADJUSTMENTS.get(provider, {
-        "extra_instructions": "",
-        "temperature": 0,
-        "max_tokens": 1500
-    })
+    return PROVIDER_ADJUSTMENTS.get(
+        provider, {"extra_instructions": "", "temperature": 0, "max_tokens": 1500}
+    )
 
 
 # OpenAI-specific prompts (legacy compatibility)
 OPENAI_PROMPTS = {
-    institution: get_prompt_for_institution(institution, "openai") 
+    institution: get_prompt_for_institution(institution, "openai")
     for institution in INSTITUTION_PROMPTS.keys()
 }
 
-# DeepSeek-specific prompts (legacy compatibility) 
+# DeepSeek-specific prompts (legacy compatibility)
 DEEPSEEK_PROMPTS = {
     institution: get_prompt_for_institution(institution, "deepseek")
     for institution in INSTITUTION_PROMPTS.keys()

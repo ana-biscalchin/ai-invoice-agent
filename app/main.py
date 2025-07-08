@@ -13,8 +13,7 @@ from app.models import InvoiceResponse, HealthResponse, APIInfoResponse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,9 @@ DEFAULT_AI_PROVIDER = os.getenv("DEFAULT_AI_PROVIDER", "openai")
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "10485760").split()[0])  # 10MB
 API_TITLE = "AI Invoice Agent"
 API_VERSION = "0.1.0"
-API_DESCRIPTION = "Simplified microservice for extracting transactions from credit card invoices"
+API_DESCRIPTION = (
+    "Simplified microservice for extracting transactions from credit card invoices"
+)
 
 # Create FastAPI app
 app = FastAPI(
@@ -44,6 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Startup logging
 @app.on_event("startup")
@@ -82,10 +84,7 @@ async def health_check():
 @app.get("/health/ready", response_model=dict)
 async def readiness_check():
     """Readiness check for container orchestration."""
-    return {
-        "status": "ready",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"status": "ready", "timestamp": datetime.utcnow().isoformat()}
 
 
 @app.get("/v1/", response_model=APIInfoResponse)
@@ -135,19 +134,13 @@ async def process_invoice(
     """
     # Validate file
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=400, 
-            detail="Only PDF files are supported"
-        )
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
     # Read file content
     try:
         content = await file.read()
     except Exception as e:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Failed to read file: {e}"
-        )
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
 
     # Validate file size
     if len(content) > MAX_FILE_SIZE:
@@ -169,7 +162,7 @@ async def process_invoice(
         extractor = TransactionExtractor(selected_provider)
         result = await extractor.process_invoice(content, file.filename)
         return result
-        
+
     except ValueError as e:
         # Business logic errors (invalid PDF, no text, etc.)
         raise HTTPException(status_code=400, detail=str(e))
@@ -181,10 +174,11 @@ async def process_invoice(
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
         reload=DEBUG,
-        log_level="info" if DEBUG else "warning"
+        log_level="info" if DEBUG else "warning",
     )

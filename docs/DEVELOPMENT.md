@@ -1,75 +1,14 @@
 # 🛠️ Development Guide - AI Invoice Agent
 
-> **Guia de desenvolvimento para o estudo de agentes de IA aplicados a finanças pessoais**
+> **Setup e workflow de desenvolvimento para agentes de IA**
 
 ## 📖 Contexto de Desenvolvimento
 
-Este projeto faz parte de um **estudo sobre agentes de IA** para construção de uma aplicação de gestão de finanças pessoais. O foco está em criar um microserviço especializado que demonstra:
-
-- **Implementação de agentes de IA** com diferentes providers
-- **Arquitetura de microserviços** com responsabilidade única
-- **Boas práticas de Python moderno** e FastAPI
-- **Preparação para integração** em sistema maior
-
-## 🎯 Objetivos de Aprendizado
-
-### **AI Agents**
-
-- ✅ Implementar múltiplos providers (OpenAI, DeepSeek)
-- ✅ Prompt engineering específico por contexto
-- ✅ Error handling e retry logic
-- ✅ Response validation e parsing
-
-### **Microservice Architecture**
-
-- ✅ Single responsibility principle
-- ✅ Stateless design
-- ✅ Health checks para orquestração
-- ✅ Container-ready deployment
-
-### **Integration Patterns**
-
-- ✅ RESTful API design
-- ✅ Structured error handling
-- ✅ Monitoring e observability
-- ✅ Extensible provider pattern
-
-## 🏗️ Estrutura Simplificada
-
-### **Arquitetura Atual**
-
-```
-ai-invoice-agent/
-├── app/
-│   ├── main.py              # 🌐 FastAPI app + routes
-│   ├── extractor.py         # 🧠 Core extraction logic
-│   ├── models.py           # 📊 Pydantic models
-│   ├── utils.py            # 🛠️ PDF processing & validation
-│   └── providers/          # 🤖 AI agents
-│       ├── __init__.py     # 🏭 Factory pattern
-│       ├── base.py         # 📋 Abstract interface
-│       ├── prompts.py      # 💬 Institution prompts
-│       ├── openai.py       # 🧠 OpenAI agent
-│       └── deepseek.py     # 🚀 DeepSeek agent
-├── docs/                   # 📚 Documentation
-├── tests/                  # 🧪 Test suite
-├── examples/               # 📄 Sample files
-├── docker-compose.yml      # 🐳 Development environment
-├── Dockerfile              # 🐳 Container definition
-└── pyproject.toml          # 📦 Dependencies & config
-```
-
-### **Design Principles**
-
-1. **KISS**: Keep It Simple, Stupid
-2. **DRY**: Don't Repeat Yourself
-3. **SOLID**: Single responsibility, Open/closed, etc.
-4. **Clean Code**: Self-documenting, testable
-5. **Async-First**: Non-blocking operations
+Este projeto faz parte de um **estudo sobre agentes de IA** para construção de uma aplicação de gestão de finanças pessoais. O foco está em criar um microserviço especializado que demonstra implementação de agentes de IA com boas práticas de desenvolvimento.
 
 ## ⚡ Quick Setup
 
-### **1. Pré-requisitos**
+### **Pré-requisitos**
 
 ```bash
 # Sistema
@@ -86,7 +25,7 @@ sudo apt-get install -y \
     poppler-utils
 ```
 
-### **2. Clone e Install**
+### **Instalação**
 
 ```bash
 # Clone do repositório
@@ -100,11 +39,10 @@ poetry shell
 # Opção 2: pip + venv
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# ou: venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-### **3. Configuração**
+### **Configuração**
 
 ```bash
 # Copiar template
@@ -125,10 +63,9 @@ DEEPSEEK_API_KEY=your-deepseek-key
 DEFAULT_AI_PROVIDER=openai
 ENVIRONMENT=development
 DEBUG=true
-MAX_FILE_SIZE=10485760
 ```
 
-### **4. Development Server**
+### **Executar**
 
 ```bash
 # Opção 1: Poetry
@@ -137,42 +74,14 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Opção 2: Python direto
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Opção 3: Script direto
-python app/main.py
-
-# Opção 4: Docker
+# Opção 3: Docker
 docker-compose up -d
-```
 
-### **5. Verificação**
-
-```bash
-# Health check
+# Verificação
 curl http://localhost:8000/health
-
-# API info
-curl http://localhost:8000/v1/
-
-# Docs (se DEBUG=true)
-open http://localhost:8000/docs
 ```
 
 ## 🧪 Testing
-
-### **Estrutura de Testes**
-
-```
-tests/
-├── test_models.py          # Testes dos modelos Pydantic
-├── test_utils.py           # Testes PDF processing
-├── test_providers.py       # Testes AI providers
-├── test_extractor.py       # Testes core logic
-├── test_api.py            # Testes endpoints
-└── fixtures/              # Arquivos de teste
-    ├── sample_caixa.pdf
-    ├── sample_nubank.pdf
-    └── expected_results.json
-```
 
 ### **Executar Testes**
 
@@ -186,15 +95,25 @@ poetry run pytest --cov=app --cov-report=html
 # Testes específicos
 poetry run pytest tests/test_models.py -v
 
-# Testes por categoria
-poetry run pytest -m "unit"      # Testes unitários
-poetry run pytest -m "integration"  # Testes integração
-
 # Teste específico
 poetry run pytest tests/test_api.py::test_process_invoice_success -v
 ```
 
-### **Mocks para Development**
+### **Estrutura de Testes**
+
+```
+tests/
+├── test_models.py          # Modelos Pydantic
+├── test_utils.py           # PDF processing & validation
+├── test_providers.py       # AI providers
+├── test_extractor.py       # Core logic
+├── test_api.py            # Endpoints
+└── fixtures/              # Arquivos de teste
+    ├── sample_caixa.pdf
+    └── expected_results.json
+```
+
+### **Mocks e Fixtures**
 
 ```python
 # tests/conftest.py
@@ -218,26 +137,25 @@ def sample_pdf_bytes():
 
 ## 🔧 Development Workflow
 
-### **1. Feature Development**
+### **Feature Development**
 
 ```bash
-# Criar feature branch
+# 1. Criar feature branch
 git checkout -b feature/novo-provider-claude
 
-# Desenvolvimento
-# 1. Implementar interface (providers/claude.py)
-# 2. Adicionar ao factory (providers/__init__.py)
-# 3. Configurar prompts (providers/prompts.py)
-# 4. Escrever testes
-# 5. Atualizar documentação
+# 2. Desenvolvimento iterativo
+# - Implementar funcionalidade
+# - Escrever testes
+# - Rodar testes localmente
+# - Code quality checks
 
-# Commit e push
+# 3. Commit e push
 git add .
 git commit -m "feat: add Claude provider support"
 git push origin feature/novo-provider-claude
 ```
 
-### **2. Code Quality**
+### **Code Quality**
 
 ```bash
 # Formatação
@@ -253,11 +171,11 @@ mypy app/
 poetry run pre-commit run --all-files
 ```
 
-### **3. Testing Workflow**
+### **Testing Workflow**
 
 ```bash
 # Durante desenvolvimento
-poetry run pytest tests/test_providers.py::test_claude_provider -v
+poetry run pytest tests/test_providers.py::test_new_provider -v
 
 # Antes do commit
 poetry run pytest --cov=app
@@ -351,8 +269,8 @@ from app.models import Transaction
 
 class ClaudeProvider(AIProvider):
     def __init__(self, api_key: str = None):
-        # Initialization logic
-        pass
+        self.api_key = api_key or os.getenv("CLAUDE_API_KEY")
+        # ... initialization
 
     @property
     def name(self) -> str:
@@ -363,7 +281,7 @@ class ClaudeProvider(AIProvider):
         text: str,
         institution: str
     ) -> Tuple[List[Transaction], float, str]:
-        # Implementation
+        # Implementation logic
         pass
 ```
 
@@ -412,7 +330,7 @@ async def test_claude_extract_transactions():
 #### **1. Detection Logic**
 
 ```python
-# app/utils.py
+# app/utils.py - PDFProcessor._detect_institution()
 def _detect_institution(self, text: str) -> str:
     text_upper = text.upper()
 
@@ -424,10 +342,10 @@ def _detect_institution(self, text: str) -> str:
     return "GENERIC"
 ```
 
-#### **2. Institution Config**
+#### **2. Processing Config**
 
 ```python
-# app/utils.py
+# app/utils.py - PDFProcessor._get_institution_config()
 def _get_institution_config(self, institution: str) -> dict:
     configs = {
         # Existing configs...
@@ -455,103 +373,24 @@ INSTITUTION_PROMPTS = {
     - Formato: data + histórico + valor na mesma linha
     - Seções: RESUMO, LANÇAMENTOS, COMPRAS
     - Valores sempre precedidos por R$
-
-    INSTRUÇÕES:
-    1. Extraia TODAS as transações...
     """
 }
 ```
 
-## 🧩 Architecture Decisions
-
-### **Por que Strategy Pattern?**
+#### **4. Testes**
 
 ```python
-# Facilita adição de novos providers
-# Permite teste isolado de cada provider
-# Runtime selection based on user preference
-# Consistent interface across implementations
+# tests/test_utils.py
+def test_santander_detection():
+    text = "BANCO SANTANDER\nFATURA DE CARTÃO"
+    processor = PDFProcessor()
 
-# Bad: Hardcoded provider
-if provider == "openai":
-    result = openai_extract(text)
-elif provider == "deepseek":
-    result = deepseek_extract(text)
+    institution = processor._detect_institution(text)
+    assert institution == "SANTANDER"
 
-# Good: Strategy pattern
-provider = create_provider(provider_name)
-result = await provider.extract_transactions(text, institution)
-```
-
-### **Por que Factory Pattern?**
-
-```python
-# Centraliza criação de providers
-# Valida provider names
-# Permite dependency injection
-# Facilita mocking em testes
-
-def create_provider(name: str, **kwargs) -> AIProvider:
-    if name not in PROVIDERS:
-        raise ValueError(f"Unknown provider '{name}'")
-    return PROVIDERS[name](**kwargs)
-```
-
-### **Por que Consolidar em main.py?**
-
-```python
-# Microserviço simples não precisa de múltiplos módulos de API
-# Facilita navegação e debugging
-# Reduz complexity overhead
-# Melhora performance (menos imports)
-
-# Tradeoff: Crescimento do arquivo vs simplicidade
-# Decisão: Para este escopo, simplicidade wins
-```
-
-## 📊 Performance Considerations
-
-### **Memory Management**
-
-```python
-# PDFs processados em memória apenas
-# Não persistir arquivos no disk
-# Limitar tamanho de texto para AI (8KB)
-# Usar streaming para large responses
-
-def extract_text(self, pdf_bytes: bytes) -> str:
-    # Não salvar arquivo temporário
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    # ... processing
-    doc.close()  # Liberar memória
-```
-
-### **Concurrency**
-
-```python
-# FastAPI handles concurrency automaticamente
-# Usar async/await para I/O operations
-# Connection pooling para HTTP clients
-# Timeout protection
-
-async with httpx.AsyncClient(
-    timeout=60,
-    limits=httpx.Limits(max_connections=20)
-) as client:
-    response = await client.post(url, json=payload)
-```
-
-### **Error Recovery**
-
-```python
-# Retry com exponential backoff
-for attempt in range(max_retries):
-    try:
-        return await self._make_api_call()
-    except TransientError:
-        if attempt == max_retries - 1:
-            raise
-        await asyncio.sleep(retry_delay * (attempt + 1))
+def test_santander_processing():
+    # Test specific processing rules
+    pass
 ```
 
 ## 🔍 Debugging
@@ -566,8 +405,7 @@ logging.basicConfig(level=logging.DEBUG)
 # Adicionar breakpoints
 import pdb; pdb.set_trace()
 
-# Ou usar debugger do IDE
-# VSCode: F5 com launch.json configurado
+# Ou usar debugger do IDE (VSCode: F5)
 ```
 
 ### **API Debugging**
@@ -603,108 +441,134 @@ extractor = TransactionExtractor()
 extractor.ai_provider = mock_provider
 ```
 
-## 📈 Monitoring & Observability
+## 🧩 Architecture Components
 
-### **Metrics Collection**
+### **App Structure**
 
-```python
-# app/extractor.py
-import time
-
-async def process_invoice(self, pdf_bytes: bytes) -> InvoiceResponse:
-    start_time = time.time()
-
-    try:
-        # Processing logic
-        result = await self._process()
-
-        # Success metrics
-        self._record_success_metrics(time.time() - start_time)
-        return result
-
-    except Exception as e:
-        # Error metrics
-        self._record_error_metrics(e, time.time() - start_time)
-        raise
+```
+app/
+├── main.py              # FastAPI app + routes
+├── extractor.py         # Core extraction logic
+├── models.py           # Pydantic models
+├── utils.py            # PDF processing & validation
+└── providers/          # AI agents
+    ├── __init__.py     # Factory pattern
+    ├── base.py         # Abstract interface
+    ├── prompts.py      # Institution prompts
+    ├── openai.py       # OpenAI agent
+    └── deepseek.py     # DeepSeek agent
 ```
 
-### **Health Checks**
+### **Key Classes**
 
 ```python
-# Detailed health information
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": API_VERSION,
-        "environment": ENVIRONMENT,
-        "ai_provider": DEFAULT_AI_PROVIDER,
-        # Adicionar checks específicos se necessário
-        "dependencies": {
-            "tesseract": check_tesseract_available(),
-            "pymupdf": check_pymupdf_working()
-        }
-    }
+# Core processing pipeline
+class TransactionExtractor:
+    """Orchestrates the complete extraction process"""
+    async def process_invoice(self, pdf_bytes, filename) -> InvoiceResponse
+
+# PDF processing utilities
+class PDFProcessor:
+    """Handles PDF text extraction and institution detection"""
+    def extract_text(self, pdf_bytes, filename) -> Tuple[str, str]
+
+# Business validation
+class TransactionValidator:
+    """Applies business rules and calculates confidence score"""
+    def run_all(self, transactions, invoice_total) -> dict
+
+# AI provider interface
+class AIProvider(ABC):
+    """Abstract base for all AI providers"""
+    async def extract_transactions(self, text, institution) -> Tuple[...]
 ```
 
-## 🚀 Deployment
+## 🚀 Performance Tips
 
-### **Docker Development**
+### **Development Performance**
+
+```python
+# Use small test files during development
+# Cache provider responses for repeated tests
+# Use async/await properly for I/O operations
+# Profile with py-spy if needed
+
+# Example: caching for development
+if ENVIRONMENT == "development":
+    @lru_cache(maxsize=10)
+    def cached_ai_call(text_hash, provider):
+        # Cache expensive AI calls during dev
+        pass
+```
+
+### **Testing Performance**
 
 ```bash
-# Build
-docker build -t ai-invoice-agent:dev .
+# Run specific test modules
+poetry run pytest tests/test_utils.py
 
-# Run with env file
-docker run --env-file .env -p 8000:8000 ai-invoice-agent:dev
+# Skip slow integration tests during development
+poetry run pytest -m "not slow"
 
-# Docker compose
-docker-compose up -d
+# Use parallel testing
+poetry run pytest -n auto
 ```
 
-### **Production Considerations**
+## 📚 Resources
 
-```python
-# app/main.py
-# Desabilitar debug em produção
-DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+### **Dependencies**
 
-app = FastAPI(
-    docs_url="/docs" if DEBUG else None,
-    redoc_url="/redoc" if DEBUG else None,
-)
+- **FastAPI**: Web framework
+- **Pydantic**: Data validation
+- **PyMuPDF**: PDF processing
+- **Tesseract**: OCR
+- **HTTPX**: Async HTTP client
+- **Pytest**: Testing framework
 
-# Configurar CORS apropriadamente
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://your-domain.com"] if not DEBUG else ["*"],
-    allow_credentials=True,
-    allow_methods=["POST", "GET"],
-    allow_headers=["*"],
-)
-```
+### **Learning Resources**
 
-## 🎓 Learning Path
-
-### **Próximos Passos**
-
-1. **Implementar testes de integração** end-to-end
-2. **Adicionar observability** (metrics, tracing)
-3. **Implementar rate limiting** e authentication
-4. **Otimizar performance** com caching
-5. **Adicionar novos providers** (Claude, Gemini)
-6. **Integrar com sistema principal** de finanças
-
-### **Recursos de Estudo**
-
-- **FastAPI**: https://fastapi.tiangolo.com/
+- **FastAPI Docs**: https://fastapi.tiangolo.com/
 - **Async Python**: https://docs.python.org/3/library/asyncio.html
 - **Pydantic**: https://docs.pydantic.dev/
-- **PyMuPDF**: https://pymupdf.readthedocs.io/
 - **OpenAI API**: https://platform.openai.com/docs/
 - **DeepSeek API**: https://platform.deepseek.com/docs/
 
+### **Tools**
+
+```bash
+# Code quality
+poetry add --group dev black ruff mypy pre-commit
+
+# Testing
+poetry add --group dev pytest pytest-cov pytest-asyncio
+
+# Debugging
+poetry add --group dev ipdb py-spy
+
+# Documentation
+poetry add --group dev mkdocs mkdocs-material
+```
+
+## 🎓 Next Steps
+
+### **Learning Objectives**
+
+1. **Implement testes de integração** end-to-end
+2. **Add observability** (structured logging, metrics)
+3. **Implement authentication** (API keys)
+4. **Optimize performance** (caching, connection pooling)
+5. **Add new providers** (Claude, Gemini)
+6. **Integration** com sistema principal de finanças
+
+### **Development Roadmap**
+
+- [ ] **v1.1**: Testes de integração completos
+- [ ] **v1.2**: Structured logging e metrics
+- [ ] **v1.3**: Authentication e rate limiting
+- [ ] **v2.0**: Async processing e webhooks
+- [ ] **v2.1**: Batch processing
+- [ ] **v2.2**: ML model training
+
 ---
 
-Este projeto serve como **base prática** para aprender implementação de agentes de IA, arquitetura de microserviços e boas práticas de desenvolvimento Python moderno, preparando para integração em sistemas maiores de gestão financeira.
+Este guia fornece as **ferramentas essenciais** para desenvolvimento eficiente do AI Invoice Agent, focando em **produtividade** e **qualidade de código**.

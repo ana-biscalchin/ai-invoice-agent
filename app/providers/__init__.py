@@ -14,21 +14,21 @@ PROVIDERS = {
 def create_provider(name: str, **kwargs) -> AIProvider:
     """
     Create an AI provider instance.
-    
+
     Args:
         name: Provider name ('openai', 'deepseek', etc.)
         **kwargs: Additional arguments to pass to provider constructor
-        
+
     Returns:
         Initialized provider instance
-        
+
     Raises:
         ValueError: If provider name is not supported
     """
     if name not in PROVIDERS:
         available = ", ".join(PROVIDERS.keys())
         raise ValueError(f"Unknown provider '{name}'. Available: {available}")
-    
+
     provider_class = PROVIDERS[name]
     return provider_class(**kwargs)
 
@@ -38,4 +38,10 @@ def list_providers() -> list:
     return list(PROVIDERS.keys())
 
 
-__all__ = ["AIProvider", "OpenAIProvider", "DeepSeekProvider", "create_provider", "list_providers"]
+__all__ = [
+    "AIProvider",
+    "OpenAIProvider",
+    "DeepSeekProvider",
+    "create_provider",
+    "list_providers",
+]
