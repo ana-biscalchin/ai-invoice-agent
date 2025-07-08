@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # AI Provider
     ai_provider: str = "openai"
     openai_api_key: str = ""
+    deepseek_api_key: str = ""
 
     # File processing limits
     max_file_size: int = 10_485_760  # 10MB
