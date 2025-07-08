@@ -1,0 +1,186 @@
+{
+  "transactions": [
+    {
+      "date": "2025-04-06",
+      "description": "Mercadolivre Djs - Parcela 2/3",
+      "amount": 78,
+      "type": "debit",
+      "installments": 3,
+      "current_installment": 2,
+      "total_purchase_amount": 234,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-06",
+      "description": "Petlove Clube 6avo - Parcela 2/6",
+      "amount": 19.98,
+      "type": "debit",
+      "installments": 6,
+      "current_installment": 2,
+      "total_purchase_amount": 119.88,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-06",
+      "description": "Principia - Parcela 2/6",
+      "amount": 36.39,
+      "type": "debit",
+      "installments": 6,
+      "current_installment": 2,
+      "total_purchase_amount": 218.34,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-06",
+      "description": "Mercadolivre Mercadol - Parcela 3/10",
+      "amount": 74.9,
+      "type": "debit",
+      "installments": 10,
+      "current_installment": 3,
+      "total_purchase_amount": 749,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-09",
+      "description": "Mercadolivre Armarinh - Parcela 1/2",
+      "amount": 40.39,
+      "type": "debit",
+      "installments": 2,
+      "current_installment": 1,
+      "total_purchase_amount": 40.39,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-12",
+      "description": "Armarinho Saojose - Parcela 1/2",
+      "amount": 33.77,
+      "type": "debit",
+      "installments": 2,
+      "current_installment": 1,
+      "total_purchase_amount": 33.77,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-13",
+      "description": "Drogaria Sao Paulo",
+      "amount": 122.31,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 122.31,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-15",
+      "description": "Raia2227 - Parcela 1/3",
+      "amount": 126.64,
+      "type": "debit",
+      "installments": 3,
+      "current_installment": 1,
+      "total_purchase_amount": 379.92,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-16",
+      "description": "Uber Trip Help.U",
+      "amount": 17.7,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 17.7,
+      "due_date": "2025-05-13",
+      "category": "Transport"
+    },
+    {
+      "date": "2025-04-16",
+      "description": "Uber Trip",
+      "amount": 13.59,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 13.59,
+      "due_date": "2025-05-13",
+      "category": "Transport"
+    },
+    {
+      "date": "2025-04-23",
+      "description": "Uber Trip Help.U",
+      "amount": 16.79,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 16.79,
+      "due_date": "2025-05-13",
+      "category": "Transport"
+    },
+    {
+      "date": "2025-04-23",
+      "description": "Uber Trip Help.U",
+      "amount": 19.97,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 19.97,
+      "due_date": "2025-05-13",
+      "category": "Transport"
+    },
+    {
+      "date": "2025-05-01",
+      "description": "Mercadolivre Tangerin",
+      "amount": 13.14,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 13.14,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-05-04",
+      "description": "Raia2227",
+      "amount": 19.36,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 19.36,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-05-05",
+      "description": "Amazonmktplc Primecome",
+      "amount": 56.89,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 56.89,
+      "due_date": "2025-05-13",
+      "category": null
+    },
+    {
+      "date": "2025-04-07",
+      "description": "Pagamento",
+      "amount": 360.32,
+      "type": "credit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 360.32,
+      "due_date": "2025-05-13",
+      "category": null
+    }
+  ],
+  "metadata": {
+    "processing_time_ms": 24466,
+    "total_transactions": 16,
+    "confidence_score": 0.7142857142857143,
+    "provider": "openai"
+  }
+}

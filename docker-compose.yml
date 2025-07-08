@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    container_name: ai-invoice-agent-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    restart: unless-stopped
