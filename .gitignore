@@ -187,4 +187,6 @@ logs/
 
 # Local development
 local/
-dev/ 
+dev/
+app/data/
+data/

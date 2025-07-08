@@ -1,410 +1,323 @@
-# 🤖 AI Invoice Agent
+# 🚀 AI Invoice Agent
 
-> **Intelligent microservice for extracting structured data from credit card invoices**
+> **Microserviço simplificado para extração automática de transações de faturas de cartão de crédito**
 
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.0-green.svg)](https://fastapi.tiangolo.com/)
-[![Poetry](https://img.shields.io/badge/poetry-1.7.0-orange.svg)](https://python-poetry.org/)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![Google Cloud Run](https://img.shields.io/badge/deploy-google%20cloud%20run-red.svg)](https://cloud.google.com/run)
+Este projeto fornece uma API REST que processa PDFs de faturas e extrai dados estruturados de transações usando inteligência artificial.
 
-## 🎯 Overview
+## 📋 Funcionalidades
 
-AI Invoice Agent is a **production-ready microservice** that uses **AI-powered text analysis** to extract structured transaction data from credit card invoice PDFs. Built for **study purposes** with focus on **Git best practices**, **robust documentation**, and **modern Python development**.
+- **📄 Processamento de PDFs**: Extração otimizada de texto com fallback OCR
+- **🏦 Detecção de Instituições**: Suporte para Caixa, Nubank, Banco do Brasil, Bradesco, Itaú
+- **🤖 Múltiplos Providers de IA**: OpenAI (GPT-4o-mini) e DeepSeek
+- **✅ Validação Completa**: 7 regras de validação para garantir qualidade dos dados
+- **🔄 Retry Logic**: Tratamento robusto de falhas temporárias
+- **📊 Monitoramento**: Health checks para orquestração de containers
 
-### ✨ Key Features
-
-- 🔍 **Intelligent PDF Processing**: PyMuPDF + OCR fallback
-- 🤖 **AI-Powered Extraction**: OpenAI GPT for transaction analysis
-- 📊 **Structured Output**: Clean JSON with validated data
-- 🚀 **Production Ready**: Google Cloud Run deployment
-- 🐳 **Containerized**: Docker development environment
-- 📚 **Well Documented**: Comprehensive guides and examples
-- 🧪 **Tested**: Unit tests and integration examples
-- 🔧 **Modern Stack**: FastAPI, Poetry, Python 3.11+
-
-## 🏗️ Architecture
+## 🏗️ Arquitetura Simplificada
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   PDF Input     │───▶│  PDF Processor   │───▶│  AI Analyzer    │
-│   (max 10MB)    │    │  (PyMuPDF+OCR)   │    │  (OpenAI GPT)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-┌─────────────────┐    ┌──────────────────┐             │
-│  JSON Output    │◀───│   Response       │◀────────────┘
-│  (Structured)   │    │   Formatter      │
-└─────────────────┘    └──────────────────┘
+ai-invoice-agent/
+├── app/
+│   ├── main.py              # FastAPI + todas as rotas
+│   ├── extractor.py         # Lógica principal de extração
+│   ├── models.py           # Modelos Pydantic
+│   ├── utils.py            # PDF processing + validação
+│   └── providers/          # Providers de IA
+│       ├── __init__.py     # Factory pattern
+│       ├── base.py         # Interface abstrata
+│       ├── prompts.py      # Prompts por instituição
+│       ├── openai.py       # Implementação OpenAI
+│       └── deepseek.py     # Implementação DeepSeek
+└── tests/                  # Testes automatizados
 ```
 
-## 🚀 Quick Start
+**Padrão Arquitetural**: Service API com Strategy Pattern para providers
 
-### Prerequisites
+## ⚡ Quick Start
 
-- **Python 3.11+**
-- **Docker** (recommended)
-- **OpenAI API Key**
-- **Google Cloud CLI** (for deployment)
-
-### 1. Clone and Setup
+### 1. **Instalação**
 
 ```bash
-# Clone repository
-git clone <repository-url>
+# Clone o repositório
+git clone https://github.com/your-org/ai-invoice-agent.git
 cd ai-invoice-agent
 
-# Setup development environment
-make setup
+# Instalar dependências (Poetry)
+poetry install
+
+# Ou via pip
+pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. **Configuração**
 
 ```bash
-# Copy environment template
+# Copiar arquivo de ambiente
 cp env.example .env
 
-# Edit with your OpenAI API key
+# Editar variáveis (obrigatório: API keys)
 nano .env
 ```
 
-### 3. Start Development Server
+**Variáveis essenciais**:
+
+```env
+# API Keys (pelo menos uma é obrigatória)
+OPENAI_API_KEY=sk-your-openai-key
+DEEPSEEK_API_KEY=your-deepseek-key
+
+# Configurações opcionais
+DEFAULT_AI_PROVIDER=openai        # ou deepseek
+ENVIRONMENT=development           # ou production
+DEBUG=true                       # ou false
+MAX_FILE_SIZE=10485760           # 10MB
+```
+
+### 3. **Executar**
 
 ```bash
-# Using Docker (recommended)
-make dev
-
-# Or using Poetry directly
-poetry install
+# Desenvolvimento
 poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Ou com Python
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Produção
+python app/main.py
 ```
 
-### 4. Test the API
+### 4. **Docker (Recomendado)**
 
 ```bash
-# Health check
-curl http://localhost:8000/health
+# Build da imagem
+docker build -t ai-invoice-agent .
 
-# Process invoice (replace with your PDF)
+# Executar container
+docker run -d \
+  --name invoice-agent \
+  -p 8000:8000 \
+  -e OPENAI_API_KEY=your-key \
+  -e DEFAULT_AI_PROVIDER=openai \
+  ai-invoice-agent
+
+# Ou usar docker-compose
+docker-compose up -d
+```
+
+## 📚 Uso da API
+
+### **Endpoints Principais**
+
+| Endpoint              | Método | Descrição                  |
+| --------------------- | ------ | -------------------------- |
+| `/`                   | GET    | Informações básicas da API |
+| `/health`             | GET    | Health check detalhado     |
+| `/health/ready`       | GET    | Readiness check para K8s   |
+| `/v1/`                | GET    | Informações da API v1      |
+| `/v1/process-invoice` | POST   | **Processar fatura PDF**   |
+
+### **Exemplo de Uso**
+
+```bash
+# Upload de PDF com OpenAI
 curl -X POST http://localhost:8000/v1/process-invoice \
-  -F "file=@examples/sample-invoice.pdf"
+  -F "file=@fatura.pdf" \
+  -F "provider=openai"
+
+# Upload de PDF com DeepSeek
+curl -X POST http://localhost:8000/v1/process-invoice \
+  -F "file=@fatura.pdf" \
+  -F "provider=deepseek"
 ```
 
-## 📋 API Documentation
-
-### Endpoints
-
-| Method | Endpoint              | Description         |
-| ------ | --------------------- | ------------------- |
-| `GET`  | `/health`             | Health check        |
-| `GET`  | `/health/ready`       | Readiness check     |
-| `POST` | `/v1/process-invoice` | Process invoice PDF |
-| `GET`  | `/v1/`                | API information     |
-
-### Request/Response Example
-
-**Request:**
-
-```bash
-curl -X POST "http://localhost:8000/v1/process-invoice" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@invoice.pdf"
-```
-
-**Response:**
+### **Resposta Estruturada**
 
 ```json
 {
   "transactions": [
     {
-      "date": "2024-01-15",
+      "date": "2025-01-15",
       "description": "UBER TRIP 001",
       "amount": 25.5,
-      "type": "debit"
-    },
-    {
-      "date": "2024-01-16",
-      "description": "NETFLIX.COM",
-      "amount": 39.9,
-      "type": "debit"
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 25.5,
+      "due_date": "2025-02-20",
+      "category": "transport"
     }
   ],
   "metadata": {
     "processing_time_ms": 1250,
-    "total_transactions": 2,
+    "total_transactions": 15,
     "confidence_score": 0.95,
-    "provider": "openai"
-  }
+    "provider": "openai",
+    "institution": "CAIXA"
+  },
+  "errors": null
 }
 ```
 
-📖 **Full API Documentation**: [docs/API.md](docs/API.md)
+## 🔧 Configuração Avançada
 
-## 🛠️ Development
+### **Providers de IA**
 
-### Project Structure
+#### **OpenAI (Recomendado)**
 
-```
-ai-invoice-agent/
-├── app/                    # Application code
-│   ├── api/               # FastAPI routes
-│   ├── core/              # Business logic
-│   ├── models/            # Pydantic models
-│   ├── providers/         # AI providers
-│   └── main.py            # FastAPI app
-├── docs/                  # Documentation
-├── examples/              # Example files
-├── tests/                 # Test suite
-├── Dockerfile             # Container definition
-├── docker-compose.yml     # Development environment
-├── pyproject.toml         # Poetry configuration
-└── Makefile               # Development commands
-```
+- **Modelo**: GPT-4o-mini
+- **Custo**: ~$0.15/1M tokens de entrada
+- **Qualidade**: Excelente para textos estruturados
+- **Configuração**: Apenas `OPENAI_API_KEY`
 
-### Development Commands
+#### **DeepSeek (Alternativa)**
 
-```bash
-# Show all commands
-make help
+- **Modelo**: deepseek-chat
+- **Custo**: ~$0.27/1M tokens de entrada
+- **Qualidade**: Boa para textos complexos
+- **Configuração**: Apenas `DEEPSEEK_API_KEY`
 
-# Setup environment
-make setup
+### **Validações Aplicadas**
 
-# Start development server
-make dev
+1. **Campos obrigatórios**: data, descrição, valor
+2. **Sem duplicatas**: transações idênticas são rejeitadas
+3. **Datas válidas**: não podem ser futuras ou após vencimento
+4. **Faixa de valores**: R$ 0,01 a R$ 100.000
+5. **Consistência de parcelas**: total = valor × parcelas
+6. **Data de vencimento**: consistente entre todas as transações
+7. **Soma válida**: total das transações = total da fatura (±R$ 0,01)
 
-# Run tests
-make test
+## 🛠️ Desenvolvimento
 
-# Run linting
-make lint
-
-# Clean up
-make clean
-```
-
-### Code Quality
-
-- **Black**: Code formatting
-- **Ruff**: Fast Python linter
-- **MyPy**: Type checking
-- **Pre-commit**: Git hooks
-
-📖 **Development Guide**: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
-
-## 🚢 Deployment
-
-### Google Cloud Run
+### **Estrutura de Testes**
 
 ```bash
-# Deploy to Cloud Run
-gcloud run deploy ai-invoice-agent \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --memory 2Gi \
-  --cpu 2
-```
-
-### Environment Variables
-
-```bash
-# Set OpenAI API key
-gcloud run services update ai-invoice-agent \
-  --set-env-vars OPENAI_API_KEY=sk-your-api-key \
-  --region us-central1
-```
-
-📖 **Deployment Guide**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-# All tests
+# Executar todos os testes
 poetry run pytest
 
-# With coverage
+# Executar com coverage
 poetry run pytest --cov=app
 
-# Specific test
-poetry run pytest tests/test_models.py -v
+# Testes específicos
+poetry run pytest tests/test_models.py
 ```
 
-### Test Examples
+### **Extensão de Providers**
+
+Para adicionar um novo provider de IA:
+
+1. **Criar implementação**:
 
 ```python
-# Test transaction model
-def test_valid_transaction():
-    transaction = Transaction(
-        date=date(2024, 1, 15),
-        description="UBER TRIP 001",
-        amount=25.50,
-        type=TransactionType.DEBIT
-    )
-    assert transaction.amount == 25.50
+# app/providers/claude.py
+class ClaudeProvider(AIProvider):
+    @property
+    def name(self) -> str:
+        return "claude"
+
+    async def extract_transactions(self, text: str, institution: str):
+        # Implementação específica
+        pass
 ```
 
-## 📊 Performance
-
-### Benchmarks
-
-- **Processing Time**: ~1-3 seconds per PDF
-- **Memory Usage**: ~512MB-2GB per instance
-- **Concurrent Requests**: Up to 80 per instance
-- **File Size Limit**: 10MB maximum
-
-### Optimization
-
-- **Text Truncation**: Limits AI input to 8000 characters
-- **OCR Fallback**: Only when PyMuPDF fails
-- **Async Processing**: Non-blocking operations
-- **Connection Pooling**: Reuse HTTP connections
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable          | Default       | Description          |
-| ----------------- | ------------- | -------------------- |
-| `ENVIRONMENT`     | `development` | Environment mode     |
-| `DEBUG`           | `false`       | Debug mode           |
-| `AI_PROVIDER`     | `openai`      | AI provider          |
-| `OPENAI_API_KEY`  | -             | OpenAI API key       |
-| `MAX_FILE_SIZE`   | `10485760`    | Max file size (10MB) |
-| `TIMEOUT_SECONDS` | `60`          | Processing timeout   |
-
-### AI Provider Configuration
-
-The system is designed to be **agnostic** to AI providers. Currently supports:
-
-- **OpenAI GPT-4o-mini** (default)
-- **Extensible**: Easy to add Claude, Gemini, etc.
-
-## 🔒 Security
-
-### Input Validation
-
-- ✅ File size limits (10MB max)
-- ✅ File type validation (PDF only)
-- ✅ Content validation (valid PDF structure)
-- ✅ Request timeout (60s max)
-
-### API Security
-
-- ✅ CORS configuration
-- ✅ Error handling without information leakage
-- ✅ Non-root container execution
-- 🔄 Rate limiting (planned)
-- 🔄 Authentication (planned)
-
-## 📈 Monitoring
-
-### Health Checks
-
-```bash
-# Health check
-curl https://your-service.run.app/health
-
-# Readiness check
-curl https://your-service.run.app/health/ready
-```
-
-### Logs
-
-```bash
-# View Cloud Run logs
-gcloud logs read "resource.type=cloud_run_revision AND resource.labels.service_name=ai-invoice-agent"
-```
-
-## 🎯 Use Cases
-
-### Primary Use Case
-
-- **Financial Apps**: Automate invoice data entry
-- **Expense Tracking**: Extract transactions for categorization
-- **Accounting**: Import credit card statements
-- **Personal Finance**: Track spending patterns
-
-### Integration Examples
+2. **Registrar no factory**:
 
 ```python
-# Python integration
-import requests
-
-def process_invoice(pdf_path):
-    with open(pdf_path, 'rb') as f:
-        files = {'file': f}
-        response = requests.post(
-            'https://your-service.run.app/v1/process-invoice',
-            files=files
-        )
-    return response.json()
-
-# Usage
-transactions = process_invoice('invoice.pdf')
-for tx in transactions['transactions']:
-    print(f"{tx['date']}: {tx['description']} - R$ {tx['amount']}")
+# app/providers/__init__.py
+PROVIDERS = {
+    "openai": OpenAIProvider,
+    "deepseek": DeepSeekProvider,
+    "claude": ClaudeProvider,  # Novo provider
+}
 ```
 
-## 🚀 Future Enhancements (V2)
+3. **Adicionar prompts**:
 
-### Planned Features
+```python
+# app/providers/prompts.py
+PROVIDER_ADJUSTMENTS = {
+    "claude": {
+        "extra_instructions": "...",
+        "temperature": 0,
+        "max_tokens": 1500
+    }
+}
+```
 
-- 🏷️ **Transaction Categorization**: Automatic expense categorization
-- 🔄 **Multiple AI Providers**: Claude, Gemini, local models
-- 📦 **Batch Processing**: Multiple PDFs in one request
-- 💾 **Caching**: Redis for repeated requests
-- 📊 **Analytics**: Processing statistics and insights
+## 🚀 Deploy
 
-### Scalability Improvements
+### **Google Cloud Run**
 
-- 🐌 **Queue System**: Celery for background processing
-- 🗄️ **Database Integration**: PostgreSQL for transaction storage
-- ☁️ **CDN**: Cloud Storage for file caching
-- 🚪 **API Gateway**: Cloud Endpoints for rate limiting
+```bash
+# Build e deploy
+gcloud builds submit --tag gcr.io/PROJECT-ID/ai-invoice-agent
+gcloud run deploy --image gcr.io/PROJECT-ID/ai-invoice-agent --platform managed
+```
 
-## 🤝 Contributing
+### **Kubernetes**
 
-This is a **study project** focused on learning best practices. Contributions are welcome!
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-invoice-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-invoice-agent
+  template:
+    metadata:
+      labels:
+        app: ai-invoice-agent
+    spec:
+      containers:
+        - name: ai-invoice-agent
+          image: ai-invoice-agent:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: openai-key
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+```
 
-### Development Workflow
+## 📊 Monitoramento
 
-1. **Fork** the repository
-2. **Create** a feature branch
-3. **Make** your changes
-4. **Test** thoroughly
-5. **Submit** a pull request
+### **Health Checks**
 
-### Code Standards
+- **Liveness**: `/health` - Verifica se a aplicação está funcionando
+- **Readiness**: `/health/ready` - Verifica se está pronta para receber tráfego
 
-- Follow **PEP 8** and **Black** formatting
-- Write **type hints** for all functions
-- Add **docstrings** for public APIs
-- Include **tests** for new features
-- Update **documentation** as needed
+### **Métricas Incluídas**
 
-## 📄 License
+- Tempo de processamento (ms)
+- Score de confiança da IA
+- Número de transações extraídas
+- Provider utilizado
+- Instituição detectada
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 🤝 Contribuição
 
-## 🙏 Acknowledgments
+1. Fork o projeto
+2. Crie uma feature branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Add nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
-- **FastAPI** team for the excellent framework
-- **OpenAI** for providing the AI capabilities
-- **Google Cloud** for the deployment platform
-- **Python community** for the amazing ecosystem
+## 📄 Licença
 
-## 📞 Support
-
-- 📖 **Documentation**: Check the [docs/](docs/) folder
-- 🐛 **Issues**: Create an issue on GitHub
-- 💬 **Discussions**: Use GitHub Discussions
-- 📧 **Email**: Contact the maintainer
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ---
 
-**Built with ❤️ for learning and experimentation**
-
-_This project demonstrates modern Python development practices, microservice architecture, and AI integration for real-world applications._
+**Desenvolvido com ❤️ para automatizar o processamento de faturas brasileiras**

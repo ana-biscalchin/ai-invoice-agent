@@ -10,4 +10,5 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - ./data/preprocessed:/tmp/preprocessed
     restart: unless-stopped

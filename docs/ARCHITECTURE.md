@@ -1,319 +1,368 @@
-# Architecture Documentation
+# 🏗️ Arquitetura do AI Invoice Agent
 
-## Overview
+> **Design patterns e decisões arquiteturais para agentes de IA**
 
-The AI Invoice Agent is a microservice designed to extract structured transaction data from credit card invoice PDFs using AI-powered text analysis.
+## 📖 Visão Arquitetural
 
-## System Architecture
+Este microserviço implementa **agentes de IA especializados** para extração de dados financeiros, usando padrões arquiteturais modernos que facilitam extensibilidade e manutenção.
+
+### **Design Principles**
+
+- **Single Responsibility**: Cada classe tem uma responsabilidade clara
+- **Strategy Pattern**: Múltiplos providers AI intercambiáveis
+- **Factory Pattern**: Criação centralizada de providers
+- **Separation of Concerns**: Camadas bem definidas
+- **Stateless**: Sem persistência local, cloud-ready
+
+## 🏛️ Arquitetura Geral
+
+### **Padrão Arquitetural: Service API**
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   PDF Input     │───▶│  PDF Processor   │───▶│  AI Analyzer    │
-│   (max 10MB)    │    │  (PyMuPDF+OCR)   │    │  (OpenAI GPT)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-┌─────────────────┐    ┌──────────────────┐             │
-│  JSON Output    │◀───│   Response       │◀────────────┘
-│  (Structured)   │    │   Formatter      │
-└─────────────────┘    └──────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   FastAPI       │    │  Core Business  │    │   AI Agents     │
+│   Routes        │───▶│   Logic         │───▶│   (Strategy)    │
+│   (main.py)     │    │  (extractor.py) │    │   (providers/)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Input/Output  │    │   Utilities     │    │   Data Models   │
+│   Validation    │    │   (utils.py)    │    │   (models.py)   │
+│   Error Handle  │    │   PDF + Valid   │    │   Pydantic      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## Component Design
+## 🔄 Fluxo de Dados
 
-### 1. API Layer (`app/api/`)
+### **Processing Pipeline**
 
-**Responsibilities:**
+```mermaid
+graph TB
+    A[PDF Upload] --> B[Input Validation]
+    B --> C[PDF Text Extraction]
+    C --> D[Institution Detection]
+    D --> E[Text Cleaning]
+    E --> F[AI Agent Selection]
+    F --> G[AI Processing]
+    G --> H[Response Parsing]
+    H --> I[Business Validation]
+    I --> J[Confidence Scoring]
+    J --> K[JSON Response]
+
+    F --> L[OpenAI Agent]
+    F --> M[DeepSeek Agent]
+    F --> N[Future Agents...]
+```
+
+### **Data Flow Details**
+
+1. **Input**: PDF bytes + optional provider
+2. **Processing**: Text extraction → Institution detection → AI processing
+3. **Validation**: Business rules + confidence scoring
+4. **Output**: Structured transactions + metadata
+
+## 🎭 Design Patterns
+
+### **1. Strategy Pattern - AI Providers**
+
+**Interface Comum**:
+
+```python
+class AIProvider(ABC):
+    @abstractmethod
+    async def extract_transactions(self, text: str, institution: str) -> Tuple[...]:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+```
+
+**Implementações Concretas**:
+
+- `OpenAIProvider`: GPT-4o-mini, structured output
+- `DeepSeekProvider`: Custom parsing, retry logic
+- _Extensível_: Claude, Gemini, modelos locais
+
+**Benefícios**:
+
+- ✅ Runtime provider selection
+- ✅ Easy testing com mocks
+- ✅ Adição de novos providers sem breaking changes
+- ✅ Configuração específica por provider
+
+### **2. Factory Pattern - Provider Creation**
+
+```python
+def create_provider(name: str, **kwargs) -> AIProvider:
+    if name not in PROVIDERS:
+        raise ValueError(f"Unknown provider '{name}'")
+    return PROVIDERS[name](**kwargs)
+```
+
+**Benefícios**:
+
+- ✅ Validação centralizada
+- ✅ Dependency injection
+- ✅ Easy mocking para testes
+- ✅ Configuration isolation
+
+### **3. Template Method - Institution Processing**
+
+**Base Structure**:
+
+```python
+def _clean_text_by_institution(self, text: str, institution: str) -> str:
+    # 1. Get institution config
+    # 2. Apply specific cleaning rules
+    # 3. Preserve important sections
+    # 4. Remove noise patterns
+```
+
+**Institution-Specific Configs**:
+
+- CAIXA: Preserve "RESUMO", "LANÇAMENTOS"
+- NUBANK: Compact format, single-line transactions
+- BANCO DO BRASIL: Structured sections
+- GENERIC: Fallback rules
+
+## 📊 Camadas Arquiteturais
+
+### **Presentation Layer (main.py)**
+
+**Responsabilidades**:
 
 - HTTP request/response handling
-- File upload validation
-- Error handling and status codes
-- Request routing
+- Input validation (file type, size)
+- Provider selection logic
+- Error handling e status codes
+- CORS e security headers
 
-**Key Components:**
+**Decisão**: Todas as rotas em um arquivo
 
-- `health.py`: Health check endpoints
-- `invoice.py`: Main invoice processing endpoint
+- ✅ Simplicidade para microserviço pequeno
+- ✅ Fácil navegação e debugging
+- ✅ Menos overhead de imports
+- ❌ Tradeoff: arquivo pode crescer
 
-**Design Patterns:**
+### **Business Logic Layer (extractor.py)**
 
-- **Router Pattern**: Modular endpoint organization
-- **Dependency Injection**: FastAPI's built-in DI system
+**Responsabilidades**:
 
-### 2. Core Business Logic (`app/core/`)
+- Orquestração do processo completo
+- Provider integration
+- Metadata collection
+- Error handling centralizado
 
-**Responsibilities:**
+**Pattern**: Facade + Orchestrator
 
-- PDF text extraction
-- Configuration management
-- Business rule enforcement
+- Simplifica interface externa
+- Coordena multiple subsystems
+- Centraliza business rules
 
-**Key Components:**
+### **Utilities Layer (utils.py)**
 
-- `config.py`: Centralized configuration using Pydantic Settings
-- `pdf_processor.py`: PDF processing with OCR fallback
+**Responsabilidades**:
 
-**Design Patterns:**
+- PDF processing (PyMuPDF + OCR fallback)
+- Institution detection
+- Text cleaning e preprocessing
+- Business validation rules
 
-- **Configuration Pattern**: Environment-based settings
-- **Strategy Pattern**: Multiple PDF processing strategies
+**Pattern**: Utility Classes
 
-### 3. Data Models (`app/models/`)
+- Stateless operations
+- Single responsibility por classe
+- Easy unit testing
 
-**Responsibilities:**
+### **Data Layer (models.py)**
 
-- Data validation and serialization
-- API contract definition
+**Responsabilidades**:
+
+- Request/response models
+- Data validation
 - Type safety
+- Serialization
 
-**Key Components:**
+**Pattern**: Data Transfer Objects (DTOs)
 
-- `invoice.py`: Transaction and metadata models
+- Pydantic validation
+- Type hints enforced
+- API contract definition
 
-**Design Patterns:**
+## 🤖 AI Agents Architecture
 
-- **Pydantic Models**: Automatic validation and serialization
-- **Enum Pattern**: Type-safe transaction types
+### **Provider Comparison**
 
-### 4. AI Providers (`app/providers/`)
+| Aspect        | OpenAI            | DeepSeek      | Design Impact                   |
+| ------------- | ----------------- | ------------- | ------------------------------- |
+| **Model**     | GPT-4o-mini       | deepseek-chat | Different prompt strategies     |
+| **Output**    | Structured JSON   | Text parsing  | Different response handling     |
+| **Cost**      | ~$0.15/1M         | ~$0.27/1M     | Cost-based selection logic      |
+| **Strengths** | Brazilian context | Multilingual  | Provider-specific optimizations |
 
-**Responsibilities:**
+### **Provider Selection Logic**
 
-- AI model integration
-- Text analysis and extraction
-- Provider abstraction
+```python
+# Runtime selection
+selected_provider = provider or DEFAULT_AI_PROVIDER
 
-**Key Components:**
-
-- `base.py`: Abstract base class for providers
-- `openai_provider.py`: OpenAI GPT implementation
-
-**Design Patterns:**
-
-- **Abstract Factory**: Provider creation
-- **Strategy Pattern**: Swappable AI providers
-- **Adapter Pattern**: Provider-specific implementations
-
-## Data Flow
-
-### 1. Request Processing
-
-```
-Client Request
-    │
-    ▼
-┌─────────────────┐
-│ FastAPI Router  │ ← Validation & routing
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ File Validation │ ← Size, format, content
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ PDF Processor   │ ← Text extraction
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ AI Provider     │ ← Transaction extraction
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ Response Format │ ← JSON serialization
-└─────────────────┘
-    │
-    ▼
-Client Response
+# Fallback strategy (future)
+for provider_name in [selected_provider, "openai", "deepseek"]:
+    try:
+        return await self._try_provider(provider_name)
+    except Exception:
+        continue
 ```
 
-### 2. Error Handling
+### **Prompt Engineering Strategy**
 
+**Institution-Specific Prompts**:
+
+- Base prompt + institution rules
+- Provider-specific adjustments
+- Temperature e token limits otimizados
+
+**Benefits**:
+
+- Improved accuracy por contexto
+- Token optimization
+- Consistent output format
+
+## 🏦 Institution Detection & Processing
+
+### **Detection Strategy**
+
+```python
+def _detect_institution(self, text: str) -> str:
+    # Priority-based detection
+    # 1. Exact matches (CARTÕES CAIXA)
+    # 2. Partial matches (NUBANK)
+    # 3. Fallback (GENERIC)
 ```
-Error Occurrence
-    │
-    ▼
-┌─────────────────┐
-│ Exception       │ ← Python exception
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ Error Handler   │ ← FastAPI exception handlers
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ HTTP Response   │ ← Structured error response
-└─────────────────┘
+
+### **Processing Configs**
+
+```python
+INSTITUTION_CONFIGS = {
+    "CAIXA": {
+        "preserve_sections": ["RESUMO", "LANÇAMENTOS"],
+        "remove_patterns": [r"^CENTRAL.*", r"^SAC.*"],
+        "value_format": "ends_with_D_or_C"
+    }
+}
 ```
 
-## Technology Stack
+**Benefits**:
 
-### Backend Framework
+- Consistent processing por instituição
+- Easy addition de novas instituições
+- Configurable without code changes
 
-- **FastAPI**: Modern, fast web framework
-- **Uvicorn**: ASGI server
-- **Pydantic**: Data validation and settings
+## ✅ Validation Architecture
 
-### PDF Processing
+### **Multi-Layer Validation**
 
-- **PyMuPDF**: Primary PDF text extraction
-- **Tesseract**: OCR fallback for image-based PDFs
-- **Pillow**: Image processing for OCR
+**1. Input Validation (FastAPI level)**:
 
-### AI Integration
+- File type, size limits
+- Provider name validation
+- Request format validation
 
-- **OpenAI SDK**: GPT model integration
-- **Async/Await**: Non-blocking AI requests
+**2. Business Validation (Domain level)**:
 
-### Development Tools
+- Transaction field requirements
+- Date consistency checks
+- Amount range validation
+- Sum reconciliation
 
-- **Poetry**: Dependency management
-- **Docker**: Containerization
-- **Pre-commit**: Code quality hooks
-- **Black/Ruff/MyPy**: Code formatting and linting
+**3. Confidence Scoring**:
 
-## Security Considerations
+```python
+confidence = passed_validations / total_validations
+```
 
-### Input Validation
+### **Validation Rules Design**
 
-- File size limits (10MB max)
-- File type validation (PDF only)
-- Content validation (valid PDF structure)
+- **Modular**: Each rule independent
+- **Configurable**: Thresholds adjustable
+- **Extensible**: Easy to add new rules
+- **Reportable**: Detailed error messages
 
-### API Security
+## 🔌 Extensibility Points
 
-- CORS configuration
-- Rate limiting (future enhancement)
-- Authentication (future enhancement)
+### **1. Adding New AI Provider**
 
-### Environment Security
+```python
+# 1. Implement AIProvider interface
+# 2. Register in PROVIDERS dict
+# 3. Configure prompts
+# 4. Add tests
+```
 
-- Environment variable management
-- Secret management (Google Secret Manager)
-- Non-root container execution
+### **2. Adding New Institution**
 
-## Performance Characteristics
+```python
+# 1. Add detection pattern
+# 2. Configure processing rules
+# 3. Add institution prompts
+# 4. Test with sample PDFs
+```
 
-### Scalability
+### **3. Adding New Validation Rule**
 
-- **Stateless Design**: No session storage
-- **Container-based**: Easy horizontal scaling
-- **Async Processing**: Non-blocking operations
+```python
+# 1. Implement validation method
+# 2. Add to validation pipeline
+# 3. Configure thresholds
+# 4. Add error messages
+```
 
-### Resource Usage
+## 📈 Performance Architecture
 
-- **Memory**: ~512MB-2GB per instance
-- **CPU**: 1-2 cores per instance
-- **Storage**: Ephemeral (no persistent storage)
+### **Optimization Strategies**
 
-### Optimization Strategies
-
-- **Text Truncation**: Limit AI input to 8000 chars
+- **Text Truncation**: 8KB limit para AI APIs
 - **OCR Fallback**: Only when PyMuPDF fails
-- **Connection Pooling**: Reuse HTTP connections
+- **Async Processing**: Non-blocking I/O
+- **Connection Pooling**: HTTP client reuse
+- **Memory Management**: No file persistence
 
-## Deployment Architecture
+### **Scalability Design**
 
-### Google Cloud Run
+- **Stateless**: Easy horizontal scaling
+- **Container-Ready**: Docker + K8s support
+- **Health Checks**: Liveness + readiness
+- **Graceful Degradation**: Provider fallbacks
 
-```
-┌─────────────────┐
-│ Cloud Run       │ ← Serverless container
-│ Service         │
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ Load Balancer   │ ← Automatic scaling
-└─────────────────┘
-    │
-    ▼
-┌─────────────────┐
-│ Container       │ ← Docker container
-│ Instance        │
-└─────────────────┘
-```
+## 🎓 Architectural Decisions Record (ADR)
 
-### Environment Configuration
+### **ADR-001: Service API over Layered Architecture**
 
-- **Development**: Local Docker with hot reload
-- **Production**: Google Cloud Run with auto-scaling
-- **Staging**: Separate Cloud Run service
+**Decision**: Single service com strategy pattern vs múltiplas camadas
+**Rationale**: Simplicidade, performance, easy testing
+**Consequences**: Tradeoff complexity vs maintainability
 
-## Monitoring and Observability
+### **ADR-002: All Routes in main.py**
 
-### Health Checks
+**Decision**: Consolidar todas as rotas em um arquivo
+**Rationale**: Microserviço pequeno, easy navigation
+**Consequences**: File growth vs simplicity
 
-- **Liveness**: `/health` endpoint
-- **Readiness**: `/health/ready` endpoint
-- **Container**: Docker health checks
+### **ADR-003: Strategy Pattern for AI Providers**
 
-### Logging
+**Decision**: Abstract interface + concrete implementations
+**Rationale**: Multiple providers, runtime selection, extensibility
+**Consequences**: More abstraction vs flexibility
 
-- **Structured Logging**: JSON format
-- **Log Levels**: INFO, WARNING, ERROR
-- **Cloud Logging**: Google Cloud integration
+### **ADR-004: Institution-Specific Processing**
 
-### Metrics
+**Decision**: Detect institution + apply specific rules
+**Rationale**: Different bank formats, accuracy improvement
+**Consequences**: More complexity vs better results
 
-- **Request Count**: Number of processed invoices
-- **Processing Time**: Time per request
-- **Error Rate**: Failed requests percentage
-- **Resource Usage**: CPU, memory, network
+---
 
-## Future Enhancements
-
-### V2 Features
-
-- **Transaction Categorization**: Automatic expense categorization
-- **Multiple AI Providers**: Claude, Gemini, local models
-- **Batch Processing**: Multiple PDFs in one request
-- **Caching**: Redis for repeated requests
-
-### Scalability Improvements
-
-- **Queue System**: Celery for background processing
-- **Database Integration**: PostgreSQL for transaction storage
-- **CDN**: Cloud Storage for file caching
-- **API Gateway**: Cloud Endpoints for rate limiting
-
-### Security Enhancements
-
-- **JWT Authentication**: User-based access control
-- **API Key Management**: Per-user API keys
-- **Audit Logging**: Request/response logging
-- **Encryption**: At-rest and in-transit encryption
-
-## Design Decisions
-
-### Why FastAPI?
-
-- **Performance**: Fast, async framework
-- **Type Safety**: Built-in Pydantic integration
-- **Documentation**: Automatic OpenAPI generation
-- **Modern**: Python 3.11+ features
-
-### Why Poetry?
-
-- **Dependency Resolution**: Better than pip
-- **Lock Files**: Reproducible builds
-- **Virtual Environments**: Automatic management
-- **Modern**: Industry standard
-
-### Why Google Cloud Run?
-
-- **Serverless**: No infrastructure management
-- **Auto-scaling**: Zero to many instances
-- **Cost-effective**: Pay per request
-- **Integration**: Native Google Cloud services
-
-### Why OpenAI GPT?
-
-- **Accuracy**: High-quality text analysis
-- **Flexibility**: Handles various PDF formats
-- **Cost**: Reasonable pricing for this use case
-- **Reliability**: Stable API with good uptime
+Esta arquitetura balanceia **simplicidade** com **extensibilidade**, criando uma base sólida para evolução do sistema de agentes de IA financeiros.

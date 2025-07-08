@@ -1,32 +1,45 @@
-"""Base interface for AI providers."""
+"""Abstract base class for AI providers."""
 
 from abc import ABC, abstractmethod
-from typing import List
-
-from app.models.invoice import Transaction
+from typing import List, Tuple
+from app.models import Transaction
 
 
 class AIProvider(ABC):
-    """Abstract base class for AI providers."""
-
+    """
+    Abstract interface that all AI providers must implement.
+    
+    This ensures consistency across different AI providers (OpenAI, DeepSeek, Claude, etc.)
+    and allows the system to swap providers without changing client code.
+    """
+    
     @abstractmethod
-    async def extract_transactions(self, text: str) -> List[Transaction]:
+    async def extract_transactions(self, text: str, institution: str) -> Tuple[List[Transaction], float, str]:
         """
         Extract transactions from invoice text.
-
+        
         Args:
-            text: Raw text extracted from PDF
-
+            text: Cleaned text extracted from PDF
+            institution: Detected institution (CAIXA, NUBANK, etc.)
+            
         Returns:
-            List of structured transactions
-
+            Tuple containing:
+            - List of Transaction objects
+            - Invoice total amount
+            - Due date string (YYYY-MM-DD format)
+            
         Raises:
-            Exception: If AI processing fails
+            Exception: If extraction fails
         """
         pass
 
     @property
     @abstractmethod
-    def provider_name(self) -> str:
-        """Return the provider name."""
+    def name(self) -> str:
+        """
+        Provider identifier (e.g., 'openai', 'deepseek', 'claude').
+        
+        Returns:
+            String identifier for this provider
+        """
         pass

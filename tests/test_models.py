@@ -21,6 +21,10 @@ class TestTransaction:
             description="UBER TRIP 001",
             amount=25.50,
             type=TransactionType.DEBIT,
+            installments=1,
+            current_installment=1,
+            total_purchase_amount=25.50,
+            due_date=date(2024, 2, 15),
         )
 
         assert transaction.transaction_date == date(2024, 1, 15)
@@ -36,6 +40,10 @@ class TestTransaction:
                 description="Test",
                 amount=-10.0,
                 type=TransactionType.DEBIT,
+                installments=1,
+                current_installment=1,
+                total_purchase_amount=-10.0,
+                due_date=date(2024, 2, 15),
             )
 
     def test_empty_description(self):
@@ -46,6 +54,10 @@ class TestTransaction:
                 description="",
                 amount=10.0,
                 type=TransactionType.DEBIT,
+                installments=1,
+                current_installment=1,
+                total_purchase_amount=10.0,
+                due_date=date(2024, 2, 15),
             )
 
 

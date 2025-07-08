@@ -1,111 +1,50 @@
-# API Documentation
+# 📚 API Reference - AI Invoice Agent
 
-## Overview
+> **RESTful API para processamento de faturas via agentes de IA**
 
-The AI Invoice Agent API provides intelligent extraction of transaction data from credit card invoice PDFs.
+## 🎯 Overview
 
-## Base URL
+API especializada em extrair transações estruturadas de PDFs de faturas de cartão de crédito usando agentes de IA (OpenAI, DeepSeek).
 
-- **Development:** `http://localhost:8000`
-- **Production:** `https://your-service-url.run.app`
+### **Base URLs**
 
-## Authentication
+```
+Local:      http://localhost:8000
+Produção:   https://your-domain.com
+```
 
-Currently, no authentication is required. For production use, consider implementing API key authentication.
+### **Content Types**
 
-## Endpoints
+- Request: `multipart/form-data` (upload) ou `application/json`
+- Response: `application/json`
 
-### Health Check
+## 🔗 Endpoints
 
-#### GET `/health`
+### **Root Information**
 
-Returns the health status of the service.
+#### `GET /`
 
-**Response:**
+Informações básicas da aplicação.
 
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00.000Z",
+  "message": "AI Invoice Agent",
   "version": "0.1.0",
-  "environment": "production",
-  "ai_provider": "openai"
+  "docs": "/docs",
+  "health": "/health",
+  "api_info": "/v1/"
 }
 ```
 
-#### GET `/health/ready`
+#### `GET /v1/`
 
-Readiness check for container orchestration.
-
-**Response:**
-
-```json
-{
-  "status": "ready",
-  "timestamp": "2024-01-15T10:30:00.000Z"
-}
-```
-
-### Invoice Processing
-
-#### POST `/v1/process-invoice`
-
-Process a credit card invoice PDF and extract structured transaction data.
-
-**Validation rules applied to each transaction:**
-
-- Required fields: Each transaction must have date, description, and amount.
-- No duplicates: Transactions with same date, amount, and description are not allowed.
-- Valid dates: Transaction date cannot be in the future or after the invoice due date.
-- Amount range: Each amount must be between 0.01 and 100,000.
-- Installments consistency: If installments > 1, total_purchase_amount must equal amount \* installments.
-- Due date consistency: All transactions must have the same due date.
-- Sum validation: The sum of all debits minus credits must match the invoice total (tolerance: 0.01).
-
-**Request:**
-
-- **Content-Type:** `multipart/form-data`
-- **Body:** PDF file upload (max 10MB)
-
-**Response:**
-
-```json
-{
-  "transactions": [
-    {
-      "date": "2024-01-15",
-      "description": "UBER TRIP 001",
-      "amount": 25.5,
-      "type": "debit"
-    }
-  ],
-  "metadata": {
-    "processing_time_ms": 1250,
-    "total_transactions": 1,
-    "confidence_score": 0.95,
-    "provider": "openai"
-  },
-  "errors": ["Sum mismatch: calculated 100.0, expected 99.99"]
-}
-```
-
-**Error Responses:**
-
-- `400 Bad Request`: Invalid file format or content
-- `413 Payload Too Large`: File exceeds 10MB limit
-- `500 Internal Server Error`: Processing failed
-
-#### GET `/v1/`
-
-Returns API information and available endpoints.
-
-**Response:**
+Informações da API v1.
 
 ```json
 {
   "name": "AI Invoice Agent",
   "version": "0.1.0",
-  "description": "Intelligent microservice for extracting structured data from credit card invoices",
+  "description": "Simplified microservice for extracting transactions from credit card invoices",
   "endpoints": {
     "process_invoice": "POST /v1/process-invoice",
     "health": "GET /health",
@@ -114,64 +53,392 @@ Returns API information and available endpoints.
 }
 ```
 
-## Data Models
+### **Health Checks**
 
-### Transaction
+#### `GET /health`
 
-```json
-{
-  "date": "string (YYYY-MM-DD)",
-  "description": "string (1-500 chars)",
-  "amount": "number (>= 0)",
-  "type": "string (credit|debit)"
-}
-```
-
-### ProcessingMetadata
+Status detalhado do serviço.
 
 ```json
 {
-  "processing_time_ms": "number (>= 0)",
-  "total_transactions": "number (>= 0)",
-  "confidence_score": "number (0-1)",
-  "provider": "string"
+  "status": "healthy",
+  "timestamp": "2025-01-08T22:29:00.439862",
+  "version": "0.1.0",
+  "environment": "development",
+  "ai_provider": "openai"
 }
 ```
 
-## Rate Limits
+#### `GET /health/ready`
 
-Currently, no rate limits are implemented. Consider implementing rate limiting for production use.
-
-## Error Handling
-
-All errors return JSON responses with the following structure:
+Readiness probe para containers.
 
 ```json
 {
-  "detail": "Error description"
+  "status": "ready",
+  "timestamp": "2025-01-08T22:29:00.439862"
 }
 ```
 
-## Examples
+### **Invoice Processing**
 
-### cURL Example
+#### `POST /v1/process-invoice`
+
+**Endpoint principal** - Processa PDF e extrai transações.
+
+**Request:**
+
+```http
+POST /v1/process-invoice
+Content-Type: multipart/form-data
+
+file: [PDF File]               # obrigatório
+provider: "openai"|"deepseek"  # opcional
+```
+
+**Validation:**
+
+- ✅ Apenas arquivos PDF
+- ✅ Tamanho máximo: 10MB
+- ✅ Provider válido: `openai` ou `deepseek`
+
+**Response (200 - Success):**
+
+```json
+{
+  "transactions": [
+    {
+      "date": "2025-01-15",
+      "description": "UBER TRIP 001",
+      "amount": 25.5,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 25.5,
+      "due_date": "2025-02-20",
+      "category": "transport"
+    }
+  ],
+  "metadata": {
+    "processing_time_ms": 1250,
+    "total_transactions": 15,
+    "confidence_score": 0.95,
+    "provider": "openai",
+    "institution": "CAIXA"
+  },
+  "errors": null
+}
+```
+
+**Error Responses:**
+
+```json
+// 400 - Bad Request
+{"detail": "Only PDF files are supported"}
+
+// 413 - Payload Too Large
+{"detail": "File too large. Maximum size is 10485760 bytes"}
+
+// 422 - Unprocessable Entity
+{"detail": "Could not extract text from PDF"}
+
+// 500 - Internal Server Error
+{"detail": "Internal processing error"}
+```
+
+## 📊 Data Models
+
+### **Transaction**
+
+```typescript
+interface Transaction {
+  date: string; // YYYY-MM-DD
+  description: string; // Transaction description
+  amount: number; // Amount in BRL (always positive)
+  type: "debit" | "credit"; // Transaction type
+  installments: number; // Number of installments (≥1)
+  current_installment: number; // Current installment (≥1)
+  total_purchase_amount: number; // Total purchase amount
+  due_date: string; // Invoice due date (YYYY-MM-DD)
+  category?: string; // Optional category
+}
+```
+
+**Field Rules:**
+
+- `date`: ISO format, not future, not after due_date
+- `description`: 1-500 characters, required
+- `amount`: 0.01 ≤ amount ≤ 100,000.00
+- `installments`: If > 1, total_purchase_amount = amount × installments
+- `due_date`: Consistent across all transactions
+
+### **ProcessingMetadata**
+
+```typescript
+interface ProcessingMetadata {
+  processing_time_ms: number; // Processing duration
+  total_transactions: number; // Count of extracted transactions
+  confidence_score: number; // AI confidence (0.0-1.0)
+  provider: string; // AI provider used ("openai"|"deepseek")
+  institution: string; // Detected institution
+}
+```
+
+**Confidence Score:**
+
+- `0.9-1.0`: Excelente qualidade
+- `0.8-0.9`: Boa qualidade
+- `0.7-0.8`: Qualidade média
+- `< 0.7`: Revisar manualmente
+
+### **InvoiceResponse**
+
+```typescript
+interface InvoiceResponse {
+  transactions: Transaction[]; // Extracted transactions
+  metadata: ProcessingMetadata; // Processing information
+  errors?: string[] | null; // Validation errors (if any)
+}
+```
+
+## 🏦 Instituições Suportadas
+
+| Código            | Nome            | Características                   |
+| ----------------- | --------------- | --------------------------------- |
+| `CAIXA`           | Caixa Econômica | Valores com D/C, linhas separadas |
+| `NUBANK`          | Nubank          | Formato compacto, valores em R$   |
+| `BANCO DO BRASIL` | Banco do Brasil | Formato estruturado               |
+| `BRADESCO`        | Bradesco        | Padrão Bradescard                 |
+| `ITAU`            | Itaú            | Formato Credicard                 |
+| `GENERIC`         | Outros bancos   | Regras genéricas                  |
+
+## 🤖 AI Providers
+
+### **OpenAI** (Recomendado)
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "cost": "~$0.15/1M tokens",
+  "strengths": ["Brazilian context", "Structured output", "Consistency"]
+}
+```
+
+### **DeepSeek** (Alternativa)
+
+```json
+{
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "cost": "~$0.27/1M tokens",
+  "strengths": ["Complex text", "Multilingual", "Cost-effective"]
+}
+```
+
+**Selection:**
+
+- **Default**: Valor de `DEFAULT_AI_PROVIDER` (env var)
+- **Override**: Via parâmetro `provider` no request
+- **Fallback**: Retry logic em caso de falha
+
+## 🚀 Usage Examples
+
+### **cURL**
 
 ```bash
-curl -X POST "http://localhost:8000/v1/process-invoice" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@invoice.pdf"
+# Basic upload
+curl -X POST http://localhost:8000/v1/process-invoice \
+  -F "file=@fatura.pdf"
+
+# With specific provider
+curl -X POST http://localhost:8000/v1/process-invoice \
+  -F "file=@fatura_caixa.pdf" \
+  -F "provider=openai"
+
+# Health check
+curl http://localhost:8000/health
 ```
 
-### Python Example
+### **Python**
 
 ```python
 import requests
 
-url = "http://localhost:8000/v1/process-invoice"
-files = {"file": open("invoice.pdf", "rb")}
+def process_invoice(file_path, provider=None):
+    with open(file_path, 'rb') as f:
+        files = {'file': f}
+        data = {'provider': provider} if provider else {}
 
-response = requests.post(url, files=files)
-data = response.json()
+        response = requests.post(
+            'http://localhost:8000/v1/process-invoice',
+            files=files,
+            data=data
+        )
 
-print(f"Extracted {data['metadata']['total_transactions']} transactions")
+    return response.json()
+
+# Usage
+result = process_invoice('fatura.pdf', 'openai')
+print(f"Extracted {len(result['transactions'])} transactions")
+print(f"Confidence: {result['metadata']['confidence_score']:.2%}")
+
+for tx in result['transactions']:
+    print(f"{tx['date']}: {tx['description']} - R$ {tx['amount']}")
 ```
+
+### **JavaScript**
+
+```javascript
+async function processInvoice(file, provider = null) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (provider) formData.append("provider", provider);
+
+  const response = await fetch("/v1/process-invoice", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+// Usage
+document.getElementById("file-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const result = await processInvoice(file, "deepseek");
+    console.log("Transactions:", result.transactions);
+    console.log("Confidence:", result.metadata.confidence_score);
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+});
+```
+
+### **Integration Example**
+
+```python
+class FinanceApp:
+    def __init__(self, ai_agent_url):
+        self.ai_agent_url = ai_agent_url
+
+    def import_invoice(self, pdf_file):
+        # Process via AI Agent
+        response = requests.post(
+            f"{self.ai_agent_url}/v1/process-invoice",
+            files={'file': pdf_file}
+        )
+
+        if response.status_code != 200:
+            raise Exception(f"Processing failed: {response.text}")
+
+        result = response.json()
+
+        # Validate confidence
+        if result['metadata']['confidence_score'] < 0.8:
+            return self.request_manual_review(result)
+
+        # Import transactions
+        for tx in result['transactions']:
+            self.save_transaction(tx)
+
+        return {
+            'status': 'success',
+            'imported': len(result['transactions']),
+            'confidence': result['metadata']['confidence_score']
+        }
+```
+
+## ✅ Validation Rules
+
+### **Input Validation**
+
+1. **File Type**: Apenas PDF files
+2. **File Size**: Máximo 10MB
+3. **Provider**: Apenas `openai` ou `deepseek`
+
+### **Business Validation**
+
+1. **Required Fields**: date, description, amount obrigatórios
+2. **No Duplicates**: Não permitir transações idênticas
+3. **Valid Dates**: Datas não podem ser futuras ou após vencimento
+4. **Amount Range**: R$ 0,01 a R$ 100.000,00
+5. **Installments Logic**: Se parcelas > 1, validar valor total
+6. **Due Date Consistency**: Mesmo vencimento para todas as transações
+7. **Sum Validation**: Soma das transações ≈ total da fatura (±R$ 0,01)
+
+### **Error Handling**
+
+```python
+# Validation errors são retornados no campo 'errors'
+{
+  "transactions": [...],
+  "metadata": {...},
+  "errors": [
+    "Transaction 1: Amount cannot be negative",
+    "Transaction 5: Date is after due date",
+    "Sum mismatch: calculated R$ 120.45, expected R$ 120.50"
+  ]
+}
+```
+
+## 📈 Rate Limits & Quotas
+
+### **Current Limits**
+
+- ❌ **Rate limiting**: Não implementado
+- ✅ **File size**: 10MB máximo
+- ✅ **Timeout**: 60 segundos por request
+- ✅ **Concurrent**: Até ~80 requests simultâneos
+
+### **Planned (v2)**
+
+- 🔮 **Rate limiting**: 100 requests/hora por IP
+- 🔮 **Authentication**: API keys
+- 🔮 **Quotas**: Baseadas em subscription
+
+## 🔄 HTTP Status Codes
+
+| Code  | Description           | When                                |
+| ----- | --------------------- | ----------------------------------- |
+| `200` | OK                    | Processamento bem-sucedido          |
+| `400` | Bad Request           | Arquivo inválido, provider inválido |
+| `413` | Payload Too Large     | Arquivo > 10MB                      |
+| `422` | Unprocessable Entity  | PDF corrompido, sem texto           |
+| `429` | Too Many Requests     | Rate limit exceeded (futuro)        |
+| `500` | Internal Server Error | Erro inesperado                     |
+| `503` | Service Unavailable   | AI provider indisponível            |
+
+## 🔗 API Versioning
+
+### **Current: v1**
+
+- **Stable**: Core endpoints
+- **Supported**: Todas as features documentadas
+- **Breaking changes**: Não esperadas
+
+### **Future: v2** (planejado)
+
+- **Authentication**: API keys obrigatórias
+- **Async processing**: Background jobs
+- **Webhooks**: Notificações de conclusão
+- **Batch processing**: Múltiplos PDFs
+
+## 📝 OpenAPI Schema
+
+A documentação interativa está disponível em:
+
+- **Swagger UI**: `GET /docs` (se DEBUG=true)
+- **ReDoc**: `GET /redoc` (se DEBUG=true)
+- **OpenAPI JSON**: `GET /openapi.json`
+
+---
+
+Esta API serve como **interface especializada** para extração automatizada de dados financeiros, integrando facilmente com sistemas maiores de gestão de finanças pessoais.
