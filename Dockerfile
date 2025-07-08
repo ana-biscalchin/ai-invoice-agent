@@ -8,6 +8,10 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     DOCKER_CONTAINER=1
 
+# Build arguments for user configuration
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -32,8 +36,11 @@ COPY . .
 RUN poetry config virtualenvs.create false \
     && poetry install --with dev --no-interaction --no-ansi
 
-# Create non-root user
-RUN adduser --disabled-password --gecos '' appuser
+# Create non-root user with matching UID/GID
+RUN groupadd -g ${GROUP_ID} appgroup \
+    && useradd -u ${USER_ID} -g ${GROUP_ID} -d /home/appuser -m -s /bin/bash appuser \
+    && chown -R appuser:appgroup /app
+
 USER appuser
 
 # Expose port

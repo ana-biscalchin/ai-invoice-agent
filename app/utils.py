@@ -131,26 +131,21 @@ class PDFProcessor:
                 "00.360.305/0001-04",
             ]
         ):
-            self.logger.info("Detected institution: CAIXA")
             return "CAIXA"
 
         if any(pattern in text_upper for pattern in ["NUBANK", "NU PAGAMENTOS"]):
-            self.logger.info("Detected institution: NUBANK")
             return "NUBANK"
 
         if any(
             pattern in text_upper
             for pattern in ["BANCO DO BRASIL", "BB.COM.BR", "001-9"]
         ):
-            self.logger.info("Detected institution: BANCO DO BRASIL")
             return "BANCO DO BRASIL"
 
         if any(pattern in text_upper for pattern in ["BRADESCO", "BRADESCARD"]):
-            self.logger.info("Detected institution: BRADESCO")
             return "BRADESCO"
 
         if any(pattern in text_upper for pattern in ["ITAU", "ITAÚ", "CREDICARD"]):
-            self.logger.info("Detected institution: ITAU")
             return "ITAU"
 
         self.logger.warning(

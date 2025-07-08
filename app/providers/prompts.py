@@ -1,140 +1,101 @@
 """AI prompts organized by institution and provider."""
 
-# Base prompts by institution
 INSTITUTION_PROMPTS = {
-    "CAIXA": """
-Você é um especialista em extrair dados de faturas do Cartão Caixa.
-
-REGRAS ESPECÍFICAS PARA CAIXA:
-- Data, descrição e valor podem estar em linhas separadas
-- Valores terminam com 'D' (débito) ou 'C' (crédito)
-- Seções importantes: COMPRAS, COMPRAS PARCELADAS, COMPRAS INTERNACIONAIS
-- Formato de data: DD/MM
-- Valores no formato: 999,99
-
-INSTRUÇÕES:
-1. Extraia TODAS as transações das seções relevantes
-2. Para cada transação, identifique: data, descrição e valor
-3. Determine se é débito (D) ou crédito (C)
-4. Encontre o valor total da fatura e data de vencimento
-5. Retorne apenas JSON válido, sem explicações
-
-Retorne no formato JSON especificado.
-""",
-    "NUBANK": """
-Você é um especialista em extrair dados de faturas do Nubank.
-
-REGRAS ESPECÍFICAS PARA NUBANK:
-- Formato compacto: data, descrição e valor geralmente na mesma linha
-- Valores sempre em R$ 
-- Seções: RESUMO DA FATURA, TRANSAÇÕES, COMPRAS
-- Formato claro e organizado
-
-INSTRUÇÕES:
-1. Extraia TODAS as transações da fatura
-2. Identifique data, descrição e valor para cada transação
-3. Encontre o valor total da fatura e data de vencimento
-4. Retorne apenas JSON válido, sem explicações
-
-Retorne no formato JSON especificado.
-""",
-    "BANCO DO BRASIL": """
-Você é um especialista em extrair dados de faturas do Banco do Brasil.
-
-REGRAS ESPECÍFICAS PARA BB:
-- Seções: EXTRATO, LANÇAMENTOS, COMPRAS, DÉBITOS
-- Formato estruturado com data e histórico
-- Valores com identificação clara
-
-INSTRUÇÕES:
-1. Extraia TODAS as transações da fatura
-2. Identifique data, descrição e valor para cada transação
-3. Encontre o valor total da fatura e data de vencimento
-4. Retorne apenas JSON válido, sem explicações
-
-Retorne no formato JSON especificado.
-""",
-    "GENERIC": """
-Você é um especialista em extrair dados de faturas de cartão de crédito.
-
-REGRAS GERAIS:
-- Identifique todas as transações (compras, pagamentos, etc.)
-- Para cada transação, extraia: data, descrição e valor
-- Determine se é débito ou crédito
-- Encontre valor total da fatura e data de vencimento
-
-INSTRUÇÕES:
-1. Extraia TODAS as transações da fatura
-2. Seja preciso com datas, valores e descrições
-3. Retorne apenas JSON válido, sem explicações
-
-Retorne no formato JSON especificado.
-""",
+    "NUBANK": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Nubank in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "  2. Ignore any line in the 'Pagamentos' section or whose description starts with "
+        "'Pagamento em', 'Pagamento recebido', 'Pagamento efetuado'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• 'Insta X/Y' → current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example below."
+    ),
+    "CAIXA": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Caixa Econômica Federal in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only refunds, adjustments, or partial payments). "
+        "• Determine the type using the final letter in each transaction: 'D' = debit, 'C' = credit. "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'OBRIGADO PELO PAGAMENTO', 'TOTAL DA FATURA ANTERIOR' or 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, or limits. "
+        "• For installment purchases shown as 'Parcela X/Y' or 'X DE Y', set current_installment=X, installments=Y; otherwise, use 1/1. "
+        "• For international purchases, extract only the BRL amount and ignore USD/cotação. "
+        "• All dates must be formatted as 'YYYY-MM-DD'. "
+        "• All amounts must be in BRL and as positive float values. "
+        "• Compute total_purchase_amount = amount * installments. "
+        "• Copy the invoice due date (top of document) into the 'due_date' field of every transaction. "
+        "• Output must be a JSON object with a 'transactions' array. Return JSON exactly like the example below."
+    ),
+    "BANCO DO BRASIL": (
+        "You are an extraction engine that reads Brazilian credit-card invoices from Banco do Brasil in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• If installment info appears as 'Parcela X/Y', set current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example below."
+    ),
+    "GENERIC": (
+        "You are an extraction engine that reads Brazilian credit-card invoices in plain text and returns valid JSON (no prose). "
+        "Rules: "
+        "• Extract ONLY individual transactions (purchases, fees, refunds, payments). "
+        "• Classify each as 'debit' (money spent) or 'credit' (only partial payments, refund/estorno). "
+        "• Ignore any line in the 'Pagamentos' section or whose description starts with 'Pagamento', 'Crédito recebido'. "
+        "• Ignore totals, summaries, parcelamento options, limits. "
+        "• Dates → YYYY-MM-DD; amounts → positive numbers. "
+        "• If installment info appears as 'X/Y', set current_installment=X, installments=Y; else 1/1. "
+        "• total_purchase_amount = amount * installments. "
+        "• due_date = invoice due date (top of document) and must be copied into every transaction. "
+        "Return JSON exactly like the example below."
+    ),
 }
 
-# JSON example for all institutions
-JSON_EXAMPLE = """{
+# JSON example for all institutions - RESTORED ORIGINAL VERSION
+JSON_EXAMPLE = """
+{
+  "due_date": "2025-05-13",
+  "invoice_total": 617.03,
   "transactions": [
     {
-      "date": "2025-01-15",
-      "description": "UBER TRIP 001",
-      "amount": 25.50,
+      "date": "2025-04-06",
+      "description": "Mercadolivre*Djs",
+      "amount": 78.00,
       "type": "debit",
-      "installments": 1,
-      "current_installment": 1,
-      "total_purchase_amount": 25.50,
-      "due_date": "2025-02-20",
-      "category": "transport"
+      "installments": 3,
+      "current_installment": 2,
+      "total_purchase_amount": 234.00,
+      "due_date": "2025-05-13",
+      "category": null
     },
     {
-      "date": "2025-01-16", 
-      "description": "PAGAMENTO RECEBIDO",
-      "amount": 500.00,
+      "date": "2025-04-07",
+      "description": "Pagamento em 07 ABR",
+      "amount": 360.32,
       "type": "credit",
       "installments": 1,
       "current_installment": 1,
-      "total_purchase_amount": 500.00,
-      "due_date": "2025-02-20",
-      "category": "payment"
-    },
-    {
-      "date": "2025-01-17",
-      "description": "COMPRA PARCELADA LOJA XYZ",
-      "amount": 150.00,
-      "type": "debit", 
-      "installments": 3,
-      "current_installment": 1,
-      "total_purchase_amount": 450.00,
-      "due_date": "2025-02-20",
-      "category": "purchase"
+      "total_purchase_amount": 360.32,
+      "due_date": "2025-05-13",
+      "category": null
     }
-  ],
-  "invoice_total": 914.30,
-  "due_date": "2025-02-20"
-}"""
+  ]
+}
+"""
 
 # Provider-specific adjustments
 PROVIDER_ADJUSTMENTS = {
-    "openai": {
-        "extra_instructions": """
-IMPORTANTE: Seja preciso e consistente com os dados extraídos.
-Verifique se a soma das transações bate com o total da fatura.
-""",
-        "temperature": 0,
-        "max_tokens": 1800,
-    },
+    "openai": {"extra_instructions": "", "temperature": 0, "max_tokens": 1800},
     "deepseek": {
-        "extra_instructions": """
-CRÍTICO: Retorne APENAS JSON válido, sem texto adicional, sem explicações, sem formatação markdown.
-Comece diretamente com { e termine com }.
-
-OBRIGATÓRIO: Inclua SEMPRE os campos:
-- "due_date" no nível da fatura (formato YYYY-MM-DD)
-- "due_date" em cada transação (pode ser o mesmo da fatura)
-- "invoice_total" com o valor total da fatura
-
-Se não conseguir identificar a data de vencimento, use uma data futura estimada no formato YYYY-MM-DD.
-""",
+        "extra_instructions": "\nCRITICAL: Return ONLY valid JSON, no markdown formatting, no explanations.",
         "temperature": 0,
         "max_tokens": 2000,
     },
@@ -162,9 +123,7 @@ def get_prompt_for_institution(institution: str, provider: str = "generic") -> s
     extra_instructions = provider_config.get("extra_instructions", "")
 
     # Combine everything
-    full_prompt = (
-        base_prompt + "\n" + extra_instructions + "\n\nExample:" + JSON_EXAMPLE
-    )
+    full_prompt = base_prompt + extra_instructions + "\n\nExample:" + JSON_EXAMPLE
 
     return full_prompt
 
@@ -184,13 +143,12 @@ def get_provider_config(provider: str) -> dict:
     )
 
 
-# OpenAI-specific prompts (legacy compatibility)
+# Legacy compatibility
 OPENAI_PROMPTS = {
     institution: get_prompt_for_institution(institution, "openai")
     for institution in INSTITUTION_PROMPTS.keys()
 }
 
-# DeepSeek-specific prompts (legacy compatibility)
 DEEPSEEK_PROMPTS = {
     institution: get_prompt_for_institution(institution, "deepseek")
     for institution in INSTITUTION_PROMPTS.keys()
