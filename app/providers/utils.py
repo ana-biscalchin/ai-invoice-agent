@@ -116,7 +116,13 @@ def extract_invoice_metadata(data: dict[str, Any]) -> tuple[float, str]:
     Returns:
         Tuple of (invoice_total, due_date)
     """
-    invoice_total = float(data.get("invoice_total", 0))
+    # Handle None values safely
+    invoice_total_raw = data.get("invoice_total")
+    if invoice_total_raw is None:
+        invoice_total = 0.0
+    else:
+        invoice_total = float(invoice_total_raw)
+    
     due_date = data.get("due_date", "")
 
     return invoice_total, due_date

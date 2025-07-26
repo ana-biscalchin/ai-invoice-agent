@@ -36,6 +36,10 @@ test: ## Run tests
 	@echo "Running tests..."
 	poetry run pytest tests/ -v
 
+test-keys: ## Test provider integrations
+	@echo "Testing provider integrations..."
+	poetry run pytest tests/test_provider_keys.py::TestProviderIntegration -v
+
 lint: ## Run linting and formatting
 	@echo "Running linting and formatting..."
 	poetry run black app/ tests/
