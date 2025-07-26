@@ -1,11 +1,9 @@
 """PDF processing and validation utilities."""
 
 import logging
-import os
 import re
-from pathlib import Path
-from typing import Optional, Tuple, List
 from datetime import datetime
+from pathlib import Path
 
 import fitz  # PyMuPDF
 import pytesseract
@@ -28,7 +26,7 @@ class PDFProcessor:
 
     def extract_text(
         self, pdf_bytes: bytes, filename: str = "document"
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """
         Extract text from PDF optimized for invoice processing.
 
@@ -56,7 +54,7 @@ class PDFProcessor:
 
         except Exception as e:
             self.logger.error(f"Error extracting text from PDF: {e}")
-            raise ValueError(f"Failed to process PDF: {e}")
+            raise ValueError(f"Failed to process PDF: {e}") from e
 
     def _extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
         """Extract text using PyMuPDF with OCR fallback."""
@@ -274,12 +272,12 @@ class PDFProcessor:
 class TransactionValidator:
     """Validates extracted transactions against business rules."""
 
-    def __init__(self, transactions: List[Transaction], reference_date: datetime):
+    def __init__(self, transactions: list[Transaction], reference_date: datetime):
         self.transactions = transactions
         self.reference_date = reference_date
         self.errors = []
 
-    def run_all(self, invoice_total: Optional[float] = None) -> dict:
+    def run_all(self, invoice_total: float | None = None) -> dict:
         """Run all validations and return results."""
         self.errors = []
 

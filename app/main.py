@@ -3,13 +3,16 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.extractor import TransactionExtractor
-from app.models import InvoiceResponse, HealthResponse, APIInfoResponse
+from app.models import APIInfoResponse, HealthResponse, InvoiceResponse
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -105,7 +108,7 @@ async def api_info():
 @app.post("/v1/process-invoice", response_model=InvoiceResponse)
 async def process_invoice(
     file: UploadFile = File(...),
-    provider: Optional[str] = Form(
+    provider: str | None = Form(
         None,
         description="AI provider: 'openai' or 'deepseek'. If not provided, uses environment default.",
     ),
@@ -140,7 +143,7 @@ async def process_invoice(
     try:
         content = await file.read()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}") from e
 
     # Validate file size
     if len(content) > MAX_FILE_SIZE:
@@ -165,11 +168,11 @@ async def process_invoice(
 
     except ValueError as e:
         # Business logic errors (invalid PDF, no text, etc.)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         # Unexpected errors
         logger.error(f"Unexpected error processing invoice: {e}")
-        raise HTTPException(status_code=500, detail="Internal processing error")
+        raise HTTPException(status_code=500, detail="Internal processing error") from e
 
 
 if __name__ == "__main__":

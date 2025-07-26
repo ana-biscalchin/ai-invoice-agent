@@ -1,12 +1,11 @@
 """Core transaction extraction logic."""
 
 import time
-from typing import Tuple, List, Optional
 from datetime import datetime
 
-from app.models import Transaction, InvoiceResponse, ProcessingMetadata
-from app.utils import PDFProcessor, TransactionValidator
+from app.models import InvoiceResponse, ProcessingMetadata, Transaction
 from app.providers import create_provider
+from app.utils import PDFProcessor, TransactionValidator
 
 
 class TransactionExtractor:
@@ -99,10 +98,10 @@ class TransactionExtractor:
 
     def _validate_transactions(
         self,
-        transactions: List[Transaction],
-        invoice_total: Optional[float],
-        due_date: Optional[str],
-    ) -> Tuple[float, Optional[List[str]]]:
+        transactions: list[Transaction],
+        invoice_total: float | None,
+        due_date: str | None,
+    ) -> tuple[float, list[str] | None]:
         """
         Validate transactions and return confidence score and errors.
 

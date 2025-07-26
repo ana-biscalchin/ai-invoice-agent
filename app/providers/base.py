@@ -1,7 +1,7 @@
 """Abstract base class for AI providers."""
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+
 from app.models import Transaction
 
 
@@ -16,7 +16,7 @@ class AIProvider(ABC):
     @abstractmethod
     async def extract_transactions(
         self, text: str, institution: str
-    ) -> Tuple[List[Transaction], float, str]:
+    ) -> tuple[list[Transaction], float, str]:
         """
         Extract transactions from invoice text.
 

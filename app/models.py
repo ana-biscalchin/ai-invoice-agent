@@ -2,7 +2,6 @@
 
 from datetime import date as date_type
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -37,7 +36,7 @@ class Transaction(BaseModel):
         ge=0,
     )
     due_date: str = Field(..., description="Invoice due date in YYYY-MM-DD format")
-    category: Optional[str] = Field(
+    category: str | None = Field(
         default=None, description="Transaction category (optional)"
     )
 
@@ -62,13 +61,13 @@ class ProcessingMetadata(BaseModel):
 class InvoiceResponse(BaseModel):
     """Complete response for invoice processing."""
 
-    transactions: List[Transaction] = Field(
+    transactions: list[Transaction] = Field(
         ..., description="List of extracted transactions"
     )
     metadata: ProcessingMetadata = Field(
         ..., description="Processing metadata and statistics"
     )
-    errors: Optional[List[str]] = Field(
+    errors: list[str] | None = Field(
         default=None, description="List of validation errors, if any"
     )
 
@@ -78,9 +77,9 @@ class HealthResponse(BaseModel):
 
     status: str = Field(..., description="Service status")
     timestamp: str = Field(..., description="Current timestamp")
-    version: Optional[str] = Field(None, description="API version")
-    environment: Optional[str] = Field(None, description="Environment name")
-    ai_provider: Optional[str] = Field(None, description="Default AI provider")
+    version: str | None = Field(None, description="API version")
+    environment: str | None = Field(None, description="Environment name")
+    ai_provider: str | None = Field(None, description="Default AI provider")
 
 
 class APIInfoResponse(BaseModel):

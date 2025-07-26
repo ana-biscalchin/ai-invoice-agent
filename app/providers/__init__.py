@@ -1,8 +1,8 @@
 """AI provider factory and exports."""
 
 from .base import AIProvider
-from .openai import OpenAIProvider
 from .deepseek import DeepSeekProvider
+from .openai import OpenAIProvider
 
 # Provider registry
 PROVIDERS = {
