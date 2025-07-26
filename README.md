@@ -1,203 +1,116 @@
-# 🚀 AI Invoice Agent
+# AI Invoice Agent
 
-> **Microserviço para extração automática de transações de faturas via agentes de IA**
+> **Microserviço para extração automática de transações de faturas via IA**
 
-Processa PDFs de faturas de cartão de crédito e extrai dados estruturados usando OpenAI ou DeepSeek. Projeto de estudo sobre **agentes de IA** aplicados a gestão de finanças pessoais.
+Processa PDFs de faturas de cartão de crédito e extrai dados estruturados usando OpenAI, DeepSeek ou Gemini.
 
-## ✨ Features
+## Sobre o Projeto
 
-- 📄 **PDF Processing**: Texto + OCR fallback
-- 🏦 **Multi-bank**: Caixa, Nubank, Banco do Brasil
-- 🤖 **AI Agents**: OpenAI e DeepSeek
-- ✅ **Validation**: 7 regras de negócio + confidence scoring
-- 🐳 **Container-Ready**: Docker + Kubernetes
+Este é um **projeto de estudos** sobre agentes de IA aplicados a gestão de finanças pessoais. O microserviço foi desenvolvido para servir como **componente especializado** do projeto principal [Finances](https://github.com/ana-biscalchin/finances) - um sistema completo de gestão financeira pessoal.
 
-## ⚡ Quick Start
+### Integração com Finances
+
+O AI Invoice Agent fornece transações estruturadas para a API do projeto Finances, permitindo:
+
+- **Importação automática** de faturas de cartão de crédito
+- **Extração inteligente** de dados via IA
+- **Validação e categorização** automática de transações
+- **Integração seamless** com o sistema principal
+
+## Quick Start
 
 ```bash
-# 1. Setup
+# Setup
 git clone https://github.com/your-org/ai-invoice-agent.git
 cd ai-invoice-agent
 poetry install
 cp env.example .env
 # Adicionar OPENAI_API_KEY no .env
 
-# 2. Run
-poetry run uvicorn app.main:app --reload
-# or: docker-compose up -d
+# Run
+make dev
 
-# 3. Use
+# Use
 curl -X POST http://localhost:8000/v1/process-invoice \
-  -F "file=@fatura.pdf" \
-  -F "provider=openai"
+  -F "file=@fatura.pdf"
 ```
 
-## 📁 Estrutura
-
-```
-app/
-├── main.py              # FastAPI + routes
-├── extractor.py         # Core logic
-├── models.py           # Pydantic models
-├── utils.py            # PDF + validation
-└── providers/          # AI agents (Strategy Pattern)
-```
-
-## 🏦 Bancos Suportados
-
-| Banco           | Código            |
-| --------------- | ----------------- |
-| Caixa Econômica | `CAIXA`           |
-| Nubank          | `NUBANK`          |
-
-
-## 📚 Documentação
-
-| Doc                                      | Descrição                        |
-| ---------------------------------------- | -------------------------------- |
-| **[API Reference](docs/API.md)**         | Endpoints, modelos, exemplos     |
-| **[Architecture](docs/ARCHITECTURE.md)** | Design patterns, decisões        |
-| **[Development](docs/DEVELOPMENT.md)**   | Setup, workflow, extensibilidade |
-
-## 🔧 Configuração
-
-```env
-# Obrigatório (pelo menos um)
-OPENAI_API_KEY=sk-your-key
-DEEPSEEK_API_KEY=your-key
-
-# Opcional
-DEFAULT_AI_PROVIDER=openai
-ENVIRONMENT=development
-```
-
-## 🚀 Deploy
-
-```bash
-# Docker
-docker build -t ai-invoice-agent .
-docker run -p 8000:8000 -e OPENAI_API_KEY=your-key ai-invoice-agent
-```
-
-## 🔗 Integração
-
-```python
-response = requests.post(
-    "http://ai-agent:8000/v1/process-invoice",
-    files={"file": pdf_file}
-)
-
-transactions = response.json()["transactions"]
-confidence = response.json()["metadata"]["confidence_score"]
-
-if confidence > 0.8:
-    import_transactions(transactions)
-```
-
----
-
-# 🚀 AI Invoice Agent
-
-> **Microservice for automatic credit card invoice transaction extraction via AI agents**
-
-Processes credit card invoice PDFs and extracts structured data using OpenAI or DeepSeek. Study project on **AI agents** applied to personal finance management.
-
-## ✨ Features
-
-- 📄 **PDF Processing**: Text + OCR fallback
-- 🏦 **Multi-bank**: Caixa, Nubank, Banco do Brasil
-- 🤖 **AI Agents**: OpenAI and DeepSeek
-- ✅ **Validation**: 7 business rules + confidence scoring
-- 🐳 **Container-Ready**: Docker + Kubernetes
-
-## ⚡ Quick Start
-
-```bash
-# 1. Setup
-git clone https://github.com/your-org/ai-invoice-agent.git
-cd ai-invoice-agent
-poetry install
-cp env.example .env
-# Add OPENAI_API_KEY to .env
-
-# 2. Run
-poetry run uvicorn app.main:app --reload
-# or: docker-compose up -d
-
-# 3. Use
-curl -X POST http://localhost:8000/v1/process-invoice \
-  -F "file=@invoice.pdf" \
-  -F "provider=openai"
-```
-
-## 📁 Structure
-
-```
-app/
-├── main.py              # FastAPI + routes
-├── extractor.py         # Core logic
-├── models.py           # Pydantic models
-├── utils.py            # PDF + validation
-└── providers/          # AI agents (Strategy Pattern)
-```
-
-## 🏦 Supported Banks
-
-| Bank            | Code              |
-| --------------- | ----------------- |
-| Caixa Econômica | `CAIXA`           |
-| Nubank          | `NUBANK`          |
-
-
-## 📚 Documentation
-
-| Doc                                      | Description                    |
-| ---------------------------------------- | ------------------------------ |
-| **[API Reference](docs/API.md)**         | Endpoints, models, examples    |
-| **[Architecture](docs/ARCHITECTURE.md)** | Design patterns, decisions     |
-| **[Development](docs/DEVELOPMENT.md)**   | Setup, workflow, extensibility |
-
-## 🔧 Configuration
+## Configuration
 
 ```env
 # Required (at least one)
 OPENAI_API_KEY=sk-your-key
 DEEPSEEK_API_KEY=your-key
+GEMINI_API_KEY=your-key
 
 # Optional
 DEFAULT_AI_PROVIDER=openai
-ENVIRONMENT=development
 ```
 
-## 🚀 Deploy
+## Supported Banks
 
-```bash
-# Docker
-docker build -t ai-invoice-agent .
-docker run -p 8000:8000 -e OPENAI_API_KEY=your-key ai-invoice-agent
+- Caixa Econômica
+- Nubank
+- Banco do Brasil
+- Others (generic)
 
-# Cloud: Google Cloud Run, AWS Fargate, Kubernetes
-```
+## AI Providers
 
-## 🔗 Integration
+| Provider | Model            | Cost       |
+| -------- | ---------------- | ---------- |
+| OpenAI   | GPT-4o-mini      | ~$0.15/1M  |
+| DeepSeek | deepseek-chat    | ~$0.27/1M  |
+| Gemini   | gemini-1.5-flash | ~$0.075/1M |
+
+## Documentation
+
+- [API Reference](docs/API.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+
+## Integration Example
 
 ```python
-response = requests.post(
-    "http://ai-agent:8000/v1/process-invoice",
-    files={"file": pdf_file}
-)
+# Integration with Finances project
+import requests
 
-transactions = response.json()["transactions"]
-confidence = response.json()["metadata"]["confidence_score"]
+def import_invoice_to_finances(pdf_file):
+    # 1. Process PDF with AI Agent
+    ai_response = requests.post(
+        "http://ai-agent:8000/v1/process-invoice",
+        files={"file": pdf_file}
+    )
 
-if confidence > 0.8:
-    import_transactions(transactions)
+    transactions = ai_response.json()["transactions"]
+    confidence = ai_response.json()["metadata"]["confidence_score"]
+
+    # 2. Import to Finances if confidence is high
+    if confidence > 0.8:
+        finances_response = requests.post(
+            "http://finances-api:3000/api/transactions/bulk",
+            json={"transactions": transactions}
+        )
+        return finances_response.json()
+
+    return {"status": "low_confidence", "confidence": confidence}
 ```
-
-## 📄 License
-
-MIT License
 
 ---
 
-**Built for studying AI agents in personal finance applications** 💰
+# AI Invoice Agent
+
+> **Microservice for automatic credit card invoice transaction extraction via AI**
+
+Processes credit card invoice PDFs and extracts structured data using OpenAI, DeepSeek or Gemini.
+
+## About the Project
+
+This is a **study project** about AI agents applied to personal finance management. The microservice was developed to serve as a **specialized component** of the main [Finances](https://github.com/ana-biscalchin/finances) project - a complete personal finance management system.
+
+### Integration with Finances
+
+The AI Invoice Agent provides structured transactions to the Finances project API, enabling:
+
+- **Automatic import** of credit card invoices
+- **Intelligent extraction** of data via AI
+- **Automatic validation and categorization** of transactions
+- **Seamless integration** with the main system

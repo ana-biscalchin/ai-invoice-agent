@@ -110,7 +110,7 @@ async def process_invoice(
     file: UploadFile = File(...),
     provider: str | None = Form(
         None,
-        description="AI provider: 'openai' or 'deepseek'. If not provided, uses environment default.",
+        description="AI provider: 'openai', 'deepseek' or 'gemini'. If not provided, uses environment default.",
     ),
 ):
     """
@@ -127,7 +127,7 @@ async def process_invoice(
 
     Args:
         file: PDF file upload (max 10MB)
-        provider: AI provider ('openai' or 'deepseek')
+        provider: AI provider ('openai', 'deepseek' or 'gemini')
 
     Returns:
         Structured transaction data with metadata and validation errors (if any)
@@ -154,10 +154,10 @@ async def process_invoice(
 
     # Determine provider
     selected_provider = provider or DEFAULT_AI_PROVIDER
-    if selected_provider not in ["openai", "deepseek"]:
+    if selected_provider not in ["openai", "deepseek", "gemini"]:
         raise HTTPException(
             status_code=400,
-            detail="Invalid provider. Allowed values: 'openai', 'deepseek'.",
+            detail="Invalid provider. Allowed values: 'openai', 'deepseek', 'gemini'.",
         )
 
     # Process invoice
@@ -173,6 +173,44 @@ async def process_invoice(
         # Unexpected errors
         logger.error(f"Unexpected error processing invoice: {e}")
         raise HTTPException(status_code=500, detail="Internal processing error") from e
+
+
+async def _save_input_data(content: bytes, filename: str, provider: str) -> None:
+    """Save input data for analysis in development mode."""
+    try:
+        from pathlib import Path
+        import os
+        
+        # Create input data directory
+        input_dir = Path("extracted_texts/input_data")
+        input_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_filename = "".join(c for c in filename if c.isalnum() or c in "._- ").rstrip()
+        pdf_filename = f"input_{safe_filename}_{timestamp}.pdf"
+        pdf_path = input_dir / pdf_filename
+        
+        # Save original PDF
+        with open(pdf_path, "wb") as f:
+            f.write(content)
+        
+        # Save metadata
+        meta_filename = f"input_{safe_filename}_{timestamp}.meta.txt"
+        meta_path = input_dir / meta_filename
+        
+        with open(meta_path, "w", encoding="utf-8") as f:
+            f.write(f"Original filename: {filename}\n")
+            f.write(f"Provider: {provider}\n")
+            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+            f.write(f"File size: {len(content)} bytes\n")
+            f.write(f"Environment: {ENVIRONMENT}\n")
+            f.write(f"Debug: {DEBUG}\n")
+        
+        logger.info(f"Input data saved for analysis: {pdf_path}")
+        
+    except Exception as e:
+        logger.warning(f"Failed to save input data: {e}")
 
 
 if __name__ == "__main__":

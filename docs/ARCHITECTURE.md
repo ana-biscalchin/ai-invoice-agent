@@ -1,22 +1,21 @@
-# 🏗️ Arquitetura do AI Invoice Agent
+# Architecture - AI Invoice Agent
 
-> **Design patterns e decisões arquiteturais para agentes de IA**
+> **Design patterns e decisões arquiteturais**
 
-## 📖 Visão Arquitetural
+## Overview
 
-Este microserviço implementa **agentes de IA especializados** para extração de dados financeiros, usando padrões arquiteturais modernos que facilitam extensibilidade e manutenção.
+Microserviço que implementa **agentes de IA especializados** para extração de dados financeiros, usando padrões arquiteturais modernos.
 
-### **Design Principles**
+### Design Principles
 
 - **Single Responsibility**: Cada classe tem uma responsabilidade clara
 - **Strategy Pattern**: Múltiplos providers AI intercambiáveis
 - **Factory Pattern**: Criação centralizada de providers
 - **Separation of Concerns**: Camadas bem definidas
-- **Stateless**: Sem persistência local, cloud-ready
 
-## 🏛️ Arquitetura Geral
+## Architecture
 
-### **Padrão Arquitetural: Service API**
+### Service API Pattern
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -33,40 +32,17 @@ Este microserviço implementa **agentes de IA especializados** para extração d
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🔄 Fluxo de Dados
+### Data Flow
 
-### **Processing Pipeline**
-
-```mermaid
-graph TB
-    A[PDF Upload] --> B[Input Validation]
-    B --> C[PDF Text Extraction]
-    C --> D[Institution Detection]
-    D --> E[Text Cleaning]
-    E --> F[AI Agent Selection]
-    F --> G[AI Processing]
-    G --> H[Response Parsing]
-    H --> I[Business Validation]
-    I --> J[Confidence Scoring]
-    J --> K[JSON Response]
-
-    F --> L[OpenAI Agent]
-    F --> M[DeepSeek Agent]
-    F --> N[Future Agents...]
+```
+PDF Upload → Text Extraction → Institution Detection → AI Processing → Validation → Response
 ```
 
-### **Data Flow Details**
+## Design Patterns
 
-1. **Input**: PDF bytes + optional provider
-2. **Processing**: Text extraction → Institution detection → AI processing
-3. **Validation**: Business rules + confidence scoring
-4. **Output**: Structured transactions + metadata
+### 1. Strategy Pattern - AI Providers
 
-## 🎭 Design Patterns
-
-### **1. Strategy Pattern - AI Providers**
-
-**Interface Comum**:
+**Interface**:
 
 ```python
 class AIProvider(ABC):
@@ -80,20 +56,13 @@ class AIProvider(ABC):
         pass
 ```
 
-**Implementações Concretas**:
+**Implementations**:
 
 - `OpenAIProvider`: GPT-4o-mini, structured output
 - `DeepSeekProvider`: Custom parsing, retry logic
-- _Extensível_: Claude, Gemini, modelos locais
+- `GeminiProvider`: Gemini 1.5 Flash
 
-**Benefícios**:
-
-- ✅ Runtime provider selection
-- ✅ Easy testing com mocks
-- ✅ Adição de novos providers sem breaking changes
-- ✅ Configuração específica por provider
-
-### **2. Factory Pattern - Provider Creation**
+### 2. Factory Pattern - Provider Creation
 
 ```python
 def create_provider(name: str, **kwargs) -> AIProvider:
@@ -102,16 +71,7 @@ def create_provider(name: str, **kwargs) -> AIProvider:
     return PROVIDERS[name](**kwargs)
 ```
 
-**Benefícios**:
-
-- ✅ Validação centralizada
-- ✅ Dependency injection
-- ✅ Easy mocking para testes
-- ✅ Configuration isolation
-
-### **3. Template Method - Institution Processing**
-
-**Base Structure**:
+### 3. Institution-Specific Processing
 
 ```python
 def _clean_text_by_institution(self, text: str, institution: str) -> str:
@@ -121,119 +81,61 @@ def _clean_text_by_institution(self, text: str, institution: str) -> str:
     # 4. Remove noise patterns
 ```
 
-**Institution-Specific Configs**:
+## Layers
 
-- CAIXA: Preserve "RESUMO", "LANÇAMENTOS"
-- NUBANK: Compact format, single-line transactions
-- BANCO DO BRASIL: Structured sections
-- GENERIC: Fallback rules
-
-## 📊 Camadas Arquiteturais
-
-### **Presentation Layer (main.py)**
-
-**Responsabilidades**:
+### Presentation Layer (main.py)
 
 - HTTP request/response handling
-- Input validation (file type, size)
+- Input validation
 - Provider selection logic
-- Error handling e status codes
-- CORS e security headers
+- Error handling
 
-**Decisão**: Todas as rotas em um arquivo
-
-- ✅ Simplicidade para microserviço pequeno
-- ✅ Fácil navegação e debugging
-- ✅ Menos overhead de imports
-- ❌ Tradeoff: arquivo pode crescer
-
-### **Business Logic Layer (extractor.py)**
-
-**Responsabilidades**:
+### Business Logic Layer (extractor.py)
 
 - Orquestração do processo completo
 - Provider integration
 - Metadata collection
-- Error handling centralizado
 
-**Pattern**: Facade + Orchestrator
+### Utilities Layer (utils.py)
 
-- Simplifica interface externa
-- Coordena multiple subsystems
-- Centraliza business rules
-
-### **Utilities Layer (utils.py)**
-
-**Responsabilidades**:
-
-- PDF processing (PyMuPDF + OCR fallback)
+- PDF processing (PyMuPDF + OCR)
 - Institution detection
-- Text cleaning e preprocessing
-- Business validation rules
+- Text cleaning
+- Business validation
 
-**Pattern**: Utility Classes
-
-- Stateless operations
-- Single responsibility por classe
-- Easy unit testing
-
-### **Data Layer (models.py)**
-
-**Responsabilidades**:
+### Data Layer (models.py)
 
 - Request/response models
 - Data validation
 - Type safety
-- Serialization
 
-**Pattern**: Data Transfer Objects (DTOs)
+## AI Agents
 
-- Pydantic validation
-- Type hints enforced
-- API contract definition
+### Provider Comparison
 
-## 🤖 AI Agents Architecture
+| Aspect     | OpenAI          | DeepSeek      | Gemini           |
+| ---------- | --------------- | ------------- | ---------------- |
+| **Model**  | GPT-4o-mini     | deepseek-chat | gemini-1.5-flash |
+| **Output** | Structured JSON | Text parsing  | Structured JSON  |
+| **Cost**   | ~$0.15/1M       | ~$0.27/1M     | ~$0.075/1M       |
 
-### **Provider Comparison**
-
-| Aspect        | OpenAI            | DeepSeek      | Design Impact                   |
-| ------------- | ----------------- | ------------- | ------------------------------- |
-| **Model**     | GPT-4o-mini       | deepseek-chat | Different prompt strategies     |
-| **Output**    | Structured JSON   | Text parsing  | Different response handling     |
-| **Cost**      | ~$0.15/1M         | ~$0.27/1M     | Cost-based selection logic      |
-| **Strengths** | Brazilian context | Multilingual  | Provider-specific optimizations |
-
-### **Provider Selection Logic**
+### Provider Selection
 
 ```python
 # Runtime selection
 selected_provider = provider or DEFAULT_AI_PROVIDER
 
 # Fallback strategy (future)
-for provider_name in [selected_provider, "openai", "deepseek"]:
+for provider_name in [selected_provider, "openai", "deepseek", "gemini"]:
     try:
         return await self._try_provider(provider_name)
     except Exception:
         continue
 ```
 
-### **Prompt Engineering Strategy**
+## Institution Processing
 
-**Institution-Specific Prompts**:
-
-- Base prompt + institution rules
-- Provider-specific adjustments
-- Temperature e token limits otimizados
-
-**Benefits**:
-
-- Improved accuracy por contexto
-- Token optimization
-- Consistent output format
-
-## 🏦 Institution Detection & Processing
-
-### **Detection Strategy**
+### Detection Strategy
 
 ```python
 def _detect_institution(self, text: str) -> str:
@@ -243,7 +145,7 @@ def _detect_institution(self, text: str) -> str:
     # 3. Fallback (GENERIC)
 ```
 
-### **Processing Configs**
+### Processing Configs
 
 ```python
 INSTITUTION_CONFIGS = {
@@ -255,45 +157,24 @@ INSTITUTION_CONFIGS = {
 }
 ```
 
-**Benefits**:
+## Validation
 
-- Consistent processing por instituição
-- Easy addition de novas instituições
-- Configurable without code changes
+### Multi-Layer Validation
 
-## ✅ Validation Architecture
+1. **Input Validation**: File type, size limits
+2. **Business Validation**: Transaction rules, date consistency
+3. **Confidence Scoring**: Quality assessment
 
-### **Multi-Layer Validation**
+### Validation Rules
 
-**1. Input Validation (FastAPI level)**:
-
-- File type, size limits
-- Provider name validation
-- Request format validation
-
-**2. Business Validation (Domain level)**:
-
-- Transaction field requirements
+- Required fields validation
 - Date consistency checks
 - Amount range validation
 - Sum reconciliation
 
-**3. Confidence Scoring**:
+## Extensibility
 
-```python
-confidence = passed_validations / total_validations
-```
-
-### **Validation Rules Design**
-
-- **Modular**: Each rule independent
-- **Configurable**: Thresholds adjustable
-- **Extensible**: Easy to add new rules
-- **Reportable**: Detailed error messages
-
-## 🔌 Extensibility Points
-
-### **1. Adding New AI Provider**
+### Adding New AI Provider
 
 ```python
 # 1. Implement AIProvider interface
@@ -302,7 +183,7 @@ confidence = passed_validations / total_validations
 # 4. Add tests
 ```
 
-### **2. Adding New Institution**
+### Adding New Institution
 
 ```python
 # 1. Add detection pattern
@@ -311,58 +192,17 @@ confidence = passed_validations / total_validations
 # 4. Test with sample PDFs
 ```
 
-### **3. Adding New Validation Rule**
+## Performance
 
-```python
-# 1. Implement validation method
-# 2. Add to validation pipeline
-# 3. Configure thresholds
-# 4. Add error messages
-```
-
-## 📈 Performance Architecture
-
-### **Optimization Strategies**
+### Optimization Strategies
 
 - **Text Truncation**: 8KB limit para AI APIs
 - **OCR Fallback**: Only when PyMuPDF fails
 - **Async Processing**: Non-blocking I/O
 - **Connection Pooling**: HTTP client reuse
-- **Memory Management**: No file persistence
 
-### **Scalability Design**
+### Scalability
 
 - **Stateless**: Easy horizontal scaling
 - **Container-Ready**: Docker + K8s support
 - **Health Checks**: Liveness + readiness
-- **Graceful Degradation**: Provider fallbacks
-
-## 🎓 Architectural Decisions Record (ADR)
-
-### **ADR-001: Service API over Layered Architecture**
-
-**Decision**: Single service com strategy pattern vs múltiplas camadas
-**Rationale**: Simplicidade, performance, easy testing
-**Consequences**: Tradeoff complexity vs maintainability
-
-### **ADR-002: All Routes in main.py**
-
-**Decision**: Consolidar todas as rotas em um arquivo
-**Rationale**: Microserviço pequeno, easy navigation
-**Consequences**: File growth vs simplicity
-
-### **ADR-003: Strategy Pattern for AI Providers**
-
-**Decision**: Abstract interface + concrete implementations
-**Rationale**: Multiple providers, runtime selection, extensibility
-**Consequences**: More abstraction vs flexibility
-
-### **ADR-004: Institution-Specific Processing**
-
-**Decision**: Detect institution + apply specific rules
-**Rationale**: Different bank formats, accuracy improvement
-**Consequences**: More complexity vs better results
-
----
-
-Esta arquitetura balanceia **simplicidade** com **extensibilidade**, criando uma base sólida para evolução do sistema de agentes de IA financeiros.

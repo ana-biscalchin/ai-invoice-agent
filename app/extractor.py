@@ -42,9 +42,11 @@ class TransactionExtractor:
 
             # Extract text and detect institution
             text, institution = self.pdf_processor.extract_text(pdf_bytes, filename)
-            detected_institution = institution  # Store detected institution
+            detected_institution = institution
             if not text.strip():
                 raise ValueError("No text content found in PDF")
+
+
 
             # Extract transactions with AI
             (

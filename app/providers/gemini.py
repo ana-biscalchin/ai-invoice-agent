@@ -55,17 +55,13 @@ class GeminiProvider(AIProvider):
 
         try:
             prompt = get_prompt("gemini", institution)
-
-            # Clean and limit text
-            lines = [line.strip() for line in text.split("\n") if line.strip()]
-            cleaned_text = "\n".join(lines)[: self.config["text_limit"]]
-
+ 
             # Create Gemini model
             model = genai.GenerativeModel(self.config["model"])
 
             # Generate content
             response = await model.generate_content_async(
-                [prompt, cleaned_text],
+                [prompt, text],
                 generation_config=genai.types.GenerationConfig(
                     temperature=self.config["temperature"],
                     max_output_tokens=self.config["max_tokens"],

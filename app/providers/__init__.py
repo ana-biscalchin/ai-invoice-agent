@@ -2,12 +2,14 @@
 
 from .base import AIProvider
 from .deepseek import DeepSeekProvider
+from .gemini import GeminiProvider
 from .openai import OpenAIProvider
 
 # Provider registry
 PROVIDERS = {
     "openai": OpenAIProvider,
     "deepseek": DeepSeekProvider,
+    "gemini": GeminiProvider,
 }
 
 
@@ -42,6 +44,7 @@ __all__ = [
     "AIProvider",
     "OpenAIProvider",
     "DeepSeekProvider",
+    "GeminiProvider",
     "create_provider",
     "list_providers",
 ]

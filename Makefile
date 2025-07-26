@@ -13,7 +13,24 @@ setup: ## Setup development environment
 
 dev: ## Start development server
 	@echo "Starting development server..."
+	docker-compose down --remove-orphans
 	docker-compose up --build
+
+start: ## Start the application (without rebuild)
+	@echo "Starting application..."
+	docker-compose up
+
+stop: ## Stop the application
+	@echo "Stopping application..."
+	docker-compose down
+
+restart: ## Restart the application
+	@echo "Restarting application..."
+	docker-compose restart
+
+logs: ## Show application logs
+	@echo "Showing logs..."
+	docker-compose logs -f api
 
 test: ## Run tests
 	@echo "Running tests..."

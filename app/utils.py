@@ -1,6 +1,7 @@
 """PDF processing and validation utilities."""
 
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -20,9 +21,11 @@ class PDFProcessor:
     def __init__(self):
         """Initialize PDF processor."""
         self.logger = logger
-        # Use simple temp directory
-        self.output_dir = Path("/tmp/preprocessed")
+        # Use environment variable for output directory, fallback to data/preprocessed
+        output_path = os.getenv("PREPROCESSED_FILES_PATH", "data/preprocessed")
+        self.output_dir = Path(output_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.logger.info(f"PDF processor initialized with output directory: {self.output_dir.absolute()}")
 
     def extract_text(
         self, pdf_bytes: bytes, filename: str = "document"
@@ -49,6 +52,9 @@ class PDFProcessor:
 
             cleaned_text = self._clean_text_by_institution(text, institution)
             self.logger.info(f"Text cleaned: {len(cleaned_text)} characters")
+
+            # Save extracted text to file
+            self._save_text_to_file(cleaned_text, filename, institution)
 
             return cleaned_text, institution
 
@@ -257,6 +263,28 @@ class PDFProcessor:
                 return True
 
         return len(line.replace(" ", "")) < 3
+
+    def _save_text_to_file(self, text: str, filename: str, institution: str) -> None:
+        """Save extracted text to a .txt file in data/preprocessed directory."""
+        try:
+            # Create filename with timestamp and institution
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_filename = re.sub(r'[^\w\-_.]', '_', filename)
+            txt_filename = f"{safe_filename}_{institution}_{timestamp}.txt"
+            file_path = self.output_dir / txt_filename
+
+            # Save text to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(f"# Extracted from: {filename}\n")
+                f.write(f"# Institution: {institution}\n")
+                f.write(f"# Extraction date: {datetime.now().isoformat()}\n")
+                f.write(f"# Text length: {len(text)} characters\n")
+                f.write("-" * 80 + "\n\n")
+                f.write(text)
+
+            self.logger.info(f"Text saved to: {file_path}")
+        except Exception as e:
+            self.logger.warning(f"Failed to save text to file: {e}")
 
     def validate_pdf(self, pdf_bytes: bytes) -> bool:
         """Validate if the file is a valid PDF."""
