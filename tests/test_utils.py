@@ -203,7 +203,7 @@ class TestParseTransactions:
         }
         due_date = "2025-02-15"
 
-        with pytest.raises(ValueError, match="Missing required field in transaction"):
+        with pytest.raises(ValueError, match="Transaction amount cannot be None"):
             parse_transactions(data, due_date)
 
     def test_parse_transaction_invalid_amount(self):
