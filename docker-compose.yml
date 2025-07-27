@@ -15,4 +15,8 @@ services:
     volumes:
       - .:/app
       - ./extracted_texts:/app/extracted_texts
+      - vector_store_data:/app/vector_store
     restart: unless-stopped
+
+volumes:
+  vector_store_data:
