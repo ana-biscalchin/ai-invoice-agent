@@ -83,16 +83,35 @@ def parse_transactions(
 
     for tx_data in data.get("transactions", []):
         try:
+            # Validate required fields are not None
+            if tx_data.get("date") is None:
+                raise ValueError("Transaction date cannot be None")
+            if tx_data.get("description") is None:
+                raise ValueError("Transaction description cannot be None")
+            if tx_data.get("type") is None:
+                raise ValueError("Transaction type cannot be None")
+            
+            # Handle None values for amount fields
+            amount_raw = tx_data.get("amount")
+            if amount_raw is None:
+                raise ValueError("Transaction amount cannot be None")
+            
+            amount = float(amount_raw)
+            
+            total_purchase_amount_raw = tx_data.get("total_purchase_amount", amount_raw)
+            if total_purchase_amount_raw is None:
+                total_purchase_amount = amount
+            else:
+                total_purchase_amount = float(total_purchase_amount_raw)
+            
             transaction = Transaction(
                 date=tx_data["date"],
                 description=tx_data["description"],
-                amount=float(tx_data["amount"]),
+                amount=amount,
                 type=tx_data["type"],
                 installments=tx_data.get("installments", 1),
                 current_installment=tx_data.get("current_installment", 1),
-                total_purchase_amount=float(
-                    tx_data.get("total_purchase_amount", tx_data["amount"])
-                ),
+                total_purchase_amount=total_purchase_amount,
                 due_date=tx_data.get("due_date", invoice_due_date),
             )
             transactions.append(transaction)
@@ -120,7 +139,10 @@ def extract_invoice_metadata(data: dict[str, Any]) -> tuple[float, str]:
     if invoice_total_raw is None:
         invoice_total = 0.0
     else:
-        invoice_total = float(invoice_total_raw)
+        try:
+            invoice_total = float(invoice_total_raw)
+        except (ValueError, TypeError):
+            invoice_total = 0.0
     
     due_date = data.get("due_date", "")
 
