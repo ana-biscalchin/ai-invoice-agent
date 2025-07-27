@@ -36,9 +36,6 @@ class Transaction(BaseModel):
         ge=0,
     )
     due_date: str = Field(..., description="Invoice due date in YYYY-MM-DD format")
-    category: str | None = Field(
-        default=None, description="Transaction category (optional)"
-    )
 
     def __str__(self) -> str:
         return f"{self.date} - {self.description}: {self.amount}"

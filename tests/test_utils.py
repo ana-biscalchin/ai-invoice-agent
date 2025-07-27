@@ -109,7 +109,6 @@ class TestParseTransactions:
                     "current_installment": 1,
                     "total_purchase_amount": 100.50,
                     "due_date": "2025-02-15",
-                    "category": "shopping",
                 }
             ]
         }
@@ -127,7 +126,6 @@ class TestParseTransactions:
         assert transaction.current_installment == 1
         assert transaction.total_purchase_amount == 100.50
         assert transaction.due_date == "2025-02-15"
-        assert transaction.category == "shopping"
 
     def test_parse_transactions_with_defaults(self):
         """Test parsing transactions with default values."""
@@ -150,7 +148,6 @@ class TestParseTransactions:
         assert transaction.current_installment == 1
         assert transaction.total_purchase_amount == 100.50
         assert transaction.due_date == "2025-02-15"
-        assert transaction.category is None
 
     def test_parse_transactions_with_installments(self):
         """Test parsing transactions with installment information."""
@@ -292,8 +289,7 @@ class TestIntegration:
       "installments": 1,
       "current_installment": 1,
       "total_purchase_amount": 100.50,
-      "due_date": "2025-02-15",
-      "category": "shopping"
+      "due_date": "2025-02-15"
     }
   ]
 }

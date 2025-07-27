@@ -94,7 +94,6 @@ def parse_transactions(
                     tx_data.get("total_purchase_amount", tx_data["amount"])
                 ),
                 due_date=tx_data.get("due_date", invoice_due_date),
-                category=tx_data.get("category"),
             )
             transactions.append(transaction)
 
