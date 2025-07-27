@@ -61,8 +61,7 @@ JSON_EXAMPLE = """
       "installments": 3,
       "current_installment": 2,
       "total_purchase_amount": 234.00,
-      "due_date": "2025-05-13",
-      "category": null
+      "due_date": "2025-05-13"
     },
     {
       "date": "2025-04-07",
@@ -72,8 +71,7 @@ JSON_EXAMPLE = """
       "installments": 1,
       "current_installment": 1,
       "total_purchase_amount": 360.32,
-      "due_date": "2025-05-13",
-      "category": null
+      "due_date": "2025-05-13"
     }
   ]
 }

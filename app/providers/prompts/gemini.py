@@ -11,8 +11,7 @@ JSON_EXAMPLE = """
       "installments": 3,
       "current_installment": 2,
       "total_purchase_amount": 234.00,
-      "due_date": "2025-05-13",
-      "category": null
+      "due_date": "2025-05-13"
     },
     {
       "date": "2025-04-08",
@@ -22,8 +21,7 @@ JSON_EXAMPLE = """
       "installments": 1,
       "current_installment": 1,
       "total_purchase_amount": 72.79,
-      "due_date": "2025-05-13",
-      "category": null
+      "due_date": "2025-05-13"
     }
   ]
 }
@@ -54,8 +52,7 @@ INSTITUTION_PROMPTS = {
         "        - For all other valid transactions (purchases, fees), it is **'debit'**.\n"
         "    - **`installments` / `current_installment`**: Extract from patterns like 'Parcela X/Y'. Default to 1 if not present.\n"
         "    - **`total_purchase_amount`**: Calculated as `amount * installments`.\n"
-        "    - **`due_date`**: A copy of the **due_date_value** from Step 1.\n"
-        "    - **`category`**: Always `null`.\n\n"
+        "    - **`due_date`**: A copy of the **due_date_value** from Step 1.\n\n"
         "# FINAL OUTPUT INSTRUCTION\n"
         "Return ONLY the raw, valid JSON object. Do not include any other text, comments, or markdown."
     ),
