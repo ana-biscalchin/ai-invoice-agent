@@ -47,6 +47,46 @@ GEMINI_API_KEY=your-key
 DEFAULT_AI_PROVIDER=openai
 ```
 
+## Docker Setup
+
+```bash
+# Build and run with Docker
+docker-compose up -d
+
+# Set user permissions (if needed)
+export USER_ID=1000
+export GROUP_ID=1000
+sudo chown -R 1000:1000 extracted_texts/
+```
+
+## Troubleshooting
+
+### Permission Issues with Docker
+
+If you see this error in logs:
+
+```
+WARNING - Permission error creating directory /app/extracted_texts: [Errno 1] Operation not permitted
+```
+
+**Solution:**
+
+```bash
+# Set environment variables
+export USER_ID=1000
+export GROUP_ID=1000
+
+# Fix directory permissions
+sudo chown -R 1000:1000 extracted_texts/
+
+# Rebuild and restart
+docker-compose down
+docker-compose build
+docker-compose up -d
+```
+
+For more detailed troubleshooting, see [Development Guide](docs/DEVELOPMENT.md#troubleshooting).
+
 ## Supported Banks
 
 - Caixa Econômica
@@ -66,6 +106,7 @@ DEFAULT_AI_PROVIDER=openai
 
 - [API Reference](docs/API.md)
 - [Development Guide](docs/DEVELOPMENT.md)
+- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 ## Integration Example
 

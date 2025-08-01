@@ -6,6 +6,13 @@ from datetime import datetime
 from app.models import InvoiceResponse, ProcessingMetadata, Transaction
 from app.providers import create_provider
 from app.utils import PDFProcessor, TransactionValidator
+from app.categorization import (
+    CategorizationService,
+    CategorizationResponse,
+    CategorizedTransaction,
+    CategorizationRequest,
+    UserCategories,
+)
 
 
 class TransactionExtractor:
@@ -46,8 +53,6 @@ class TransactionExtractor:
             if not text.strip():
                 raise ValueError("No text content found in PDF")
 
-
-
             # Extract transactions with AI
             (
                 transactions,
@@ -86,16 +91,129 @@ class TransactionExtractor:
                 processing_time_ms=processing_time_ms,
                 total_transactions=0,
                 confidence_score=0.0,
-                provider=self.ai_provider.name
-                if hasattr(self, "ai_provider")
-                else "error",
+                provider=(
+                    self.ai_provider.name if hasattr(self, "ai_provider") else "error"
+                ),
                 institution=detected_institution,  # Use detected institution instead of hardcoded "unknown"
             )
 
             return InvoiceResponse(
                 transactions=[],
                 metadata=metadata,
-                errors=[str(e)],
+                errors=[f"Processing failed: {str(e)}"],
+            )
+
+    async def process_with_categorization(
+        self,
+        pdf_bytes: bytes,
+        user_categories: UserCategories,
+        filename: str = "document",
+        confidence_threshold: float = 0.3,
+    ) -> CategorizationResponse:
+        """
+        Process a PDF invoice, extract transactions, and categorize them.
+        """
+        print(f"🔍 DEBUG: process_with_categorization called")
+
+        # First, extract transactions using existing logic
+        extraction_result = await self.process_invoice(pdf_bytes, filename)
+
+        print(f"🔍 DEBUG: Extraction completed")
+        print(f"🔍 DEBUG: Transactions count: {len(extraction_result.transactions)}")
+        print(f"🔍 DEBUG: Has errors: {extraction_result.errors is not None}")
+
+        # If extraction failed, return error response
+        if extraction_result.errors:
+            print(
+                f"🔍 DEBUG: Extraction failed with errors: {extraction_result.errors}"
+            )
+            return CategorizationResponse(
+                session_id="error_session",
+                user_id=user_categories.user_id,
+                confidence_threshold=confidence_threshold,
+                categorized_transactions=[],
+            )
+
+        # Categorize transactions
+        try:
+            print(f"🔍 DEBUG: Starting categorization...")
+            print(f"🔍 DEBUG: Creating CategorizationService...")
+            categorization_service = CategorizationService()
+            print(f"🔍 DEBUG: CategorizationService created successfully")
+
+            # Convert transactions to CategorizedTransaction format
+            categorized_transactions = []
+            print(
+                f"🔍 DEBUG: Starting to process {len(extraction_result.transactions)} transactions"
+            )
+
+            for i, transaction in enumerate(extraction_result.transactions):
+                print(
+                    f"🔍 DEBUG: Processing transaction {i}: '{transaction.description}'"
+                )
+                try:
+                    # Categorize the transaction directly
+                    cat_tx = (
+                        await categorization_service._categorize_single_transaction(
+                            transaction=transaction,
+                            user_categories=user_categories,
+                            transaction_id=f"extracted_{i}",
+                            confidence_threshold=confidence_threshold,
+                        )
+                    )
+
+                    print(
+                        f"🔍 DEBUG: Categorization result: category='{cat_tx.category}', confidence={cat_tx.confidence_score}"
+                    )
+
+                    
+
+                    categorized_transactions.append(
+                        CategorizedTransaction(
+                            transaction_id=cat_tx.transaction_id,
+                            transaction=cat_tx.transaction,
+                            category=cat_tx.category,
+                            informed_category=None,
+                            confidence_score=cat_tx.confidence_score,
+                            categorization_method=cat_tx.categorization_method,
+                            created_at=cat_tx.created_at,
+                        )
+                    )
+                except Exception as e:
+                    print(f"🔍 DEBUG: Error categorizing transaction {i}: {e}")
+                    raise
+
+            print(
+                f"🔍 DEBUG: All transactions processed, creating categorization request..."
+            )
+
+            # Create new categorization request
+            categorization_request = CategorizationRequest(
+                user_id=user_categories.user_id,
+                user_categories=user_categories,
+                transactions=categorized_transactions,
+                confidence_threshold=confidence_threshold,
+            )
+
+            print(f"🔍 DEBUG: Calling categorization service...")
+            categorization_result = await categorization_service.categorization(
+                categorization_request
+            )
+            print(f"🔍 DEBUG: Categorization completed successfully")
+
+            return categorization_result
+
+        except Exception as e:
+            print(f"🔍 DEBUG: Error in categorization: {e}")
+            import traceback
+
+            print(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
+            # Return error response with extraction data
+            return CategorizationResponse(
+                session_id="error_session",
+                user_id=user_categories.user_id,
+                confidence_threshold=confidence_threshold,
+                categorized_transactions=[],
             )
 
     def _validate_transactions(
@@ -120,10 +238,11 @@ class TransactionExtractor:
             else:
                 due_date_obj = due_date
 
+            # Create validator with proper parameters
             validator = TransactionValidator(transactions, due_date_obj)
             results = validator.run_all(invoice_total)
 
             return results["score"], results.get("errors")
 
-        except Exception:
-            return 0.5, ["Validation failed"]
+        except Exception as e:
+            return 0.0, [f"Validation error: {str(e)}"]

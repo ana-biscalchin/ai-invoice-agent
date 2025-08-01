@@ -159,7 +159,6 @@ def process_invoice(file_path, provider=None):
 
 # Usage
 result = process_invoice('fatura.pdf', 'openai')
-print(f"Extracted {len(result['transactions'])} transactions")
 ```
 
 ### JavaScript
@@ -197,3 +196,146 @@ async function processInvoice(file, provider = null) {
 | 413  | Payload Too Large     | File > 10MB           |
 | 422  | Unprocessable Entity  | Corrupted PDF         |
 | 500  | Internal Server Error | Unexpected error      |
+
+## Categorization Endpoints
+
+### Unified Categorization API
+
+A API unificada `/v1/unified-categorization` permite categorizar e recategorizar transações em uma única interface, detectando automaticamente o tipo de operação.
+
+#### Initial Categorization
+
+```http
+POST /v1/unified-categorization
+Content-Type: application/json
+
+{
+  "user_id": "user123",
+  "user_categories": {
+    "user_id": "user123",
+    "categories": ["Alimentação", "Transporte", "Shopping", "Saúde", "Pet"]
+  },
+  "transactions": [
+    {
+      "date": "2025-01-15",
+      "description": "UBER TRIP 001",
+      "amount": 25.5,
+      "type": "debit",
+      "installments": 1,
+      "current_installment": 1,
+      "total_purchase_amount": 25.5,
+      "due_date": "2025-02-20"
+    }
+  ],
+  "confidence_threshold": 0.3
+}
+```
+
+**Response:**
+
+```json
+{
+  "session_id": "sess_a1b2c3d4",
+  "user_id": "user123",
+  "operation_type": "initial_categorization",
+  "categorized_transactions": [
+    {
+      "transaction_id": "sess_a1b2c3d4_t0",
+      "transaction": {...},
+      "category": "Transporte",
+      "confidence_score": 0.85,
+      "categorization_method": "vector_similarity"
+    }
+  ],
+  "metadata": {
+    "total_transactions": 1,
+    "successful_categorizations": 1,
+    "uncategorized_transactions": 0
+  }
+}
+```
+
+#### Recategorization
+
+```http
+POST /v1/unified-categorization
+Content-Type: application/json
+
+{
+  "session_id": "sess_a1b2c3d4",
+  "user_id": "user123",
+  "user_categories": {
+    "user_id": "user123",
+    "categories": ["Alimentação", "Transporte", "Shopping", "Saúde", "Pet"]
+  },
+  "recategorizations": [
+    {
+      "transaction_id": "sess_a1b2c3d4_t0",
+      "old_category": null,
+      "new_category": "Shopping"
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "session_id": "sess_a1b2c3d4",
+  "user_id": "user123",
+  "operation_type": "recategorization",
+  "updated_count": 1,
+  "learning_feedback": {
+    "session_id": "sess_a1b2c3d4",
+    "user_id": "user123",
+    "updates": [
+      {
+        "transaction_id": "sess_a1b2c3d4_t0",
+        "old_category": null,
+        "new_category": "Shopping",
+        "action": "updated_existing_transaction",
+        "updated_at": "2025-01-15T10:30:00.000000"
+      }
+    ]
+  }
+}
+```
+
+### Process with Categorization
+
+```http
+POST /v1/process-with-categorization
+Content-Type: multipart/form-data
+
+file: [PDF File]
+user_categories: {"user_id": "user123", "categories": ["Alimentação", "Transporte", "Shopping"]}
+confidence_threshold: 0.3
+```
+
+### Get User Categories
+
+```http
+GET /v1/categories/{user_id}
+```
+
+### Get User Transactions
+
+```http
+GET /v1/transactions/{user_id}?limit=100
+```
+
+## Learning System
+
+O sistema aprende com o feedback do usuário para melhorar futuras categorizações:
+
+1. **Categorização inicial**: Sistema categoriza transações usando IA
+2. **Feedback do usuário**: Usuário corrige categorias incorretas
+3. **Aprendizado**: Sistema atualiza o vector store com as correções
+4. **Melhoria**: Próximas categorizações são mais precisas
+
+## Flow Recomendado
+
+1. Use `/v1/process-with-categorization` para processar PDFs
+2. Use `/v1/unified-categorization` para recategorizar transações
+3. O sistema aprende automaticamente com suas correções

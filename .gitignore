@@ -191,3 +191,9 @@ dev/
 app/data/
 data/
 extracted_texts/
+vector_store/chroma.sqlite3
+
+docs/categorization_input.json
+docs/categories.json
+docs/recategorized.json
+docs/categorized_transactions_out.json
