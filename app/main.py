@@ -15,6 +15,7 @@ from app.categorization import (
     CategorizationRequest,
     CategorizationResponse,
     UserCategories,
+    CategorizedTransaction,
 )
 
 # Load environment variables
@@ -200,76 +201,34 @@ async def process_with_categorization(
     ),
     confidence_threshold: float = Form(
         0.3,
-        description="Minimum confidence score to assign a category (0.0-1.0, default: 0.3)",
+        description="Confidence threshold for categorization (0.0 to 1.0)",
     ),
-):
+) -> CategorizationResponse:
     """
-    Process credit card invoice PDF and categorize transactions.
+    Process a PDF invoice with extraction and categorization.
     """
-    print(f"🔍 DEBUG: process_with_categorization endpoint called")
-    
-    import json
-
-    # Validate file
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
-
-    # Read file content
     try:
-        content = await file.read()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}") from e
-
-    # Validate file size
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Maximum size is {MAX_FILE_SIZE} bytes",
-        )
-
-    # Parse user categories
-    try:
-        categories_data = json.loads(user_categories)
-        user_categories_obj = UserCategories(**categories_data)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON in user_categories")
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid user_categories format: {e}"
-        )
-
-    # Validate extraction model
-    if extraction_model not in ["openai", "deepseek", "gemini"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid extraction_model. Allowed values: 'openai', 'deepseek', 'gemini'.",
-        )
-
-    # Validate confidence threshold
-    if not 0.0 <= confidence_threshold <= 1.0:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid confidence_threshold. Must be between 0.0 and 1.0.",
-        )
-
-    try:
-        print(f"🔍 DEBUG: Creating TransactionExtractor...")
-        # Extract and categorize transactions using integrated method
-        extractor = TransactionExtractor(extraction_model)
-        print(f"💾 TransactionExtractor result: ", extractor)
+        # Parse user categories
+        user_categories_data = UserCategories.model_validate_json(user_categories)
         
-        print(f"🔍 DEBUG: Calling process_with_categorization...")
-        categorization_result = await extractor.process_with_categorization(
-            content, user_categories_obj, file.filename, confidence_threshold
+        # Read file content
+        pdf_bytes = await file.read()
+        
+        # Create transaction extractor
+        extractor = TransactionExtractor(provider_name=extraction_model)
+        
+        # Process with categorization
+        result = await extractor.process_with_categorization(
+            pdf_bytes=pdf_bytes,
+            user_categories=user_categories_data,
+            filename=file.filename,
+            confidence_threshold=confidence_threshold,
         )
-        print(f"🔍 DEBUG: process_with_categorization completed")
-
-        return categorization_result
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        
+        return result
+        
     except Exception as e:
-        logger.error(f"Unexpected error in categorization: {e}")
+        logger.error(f"Error in process_with_categorization: {e}")
         raise HTTPException(status_code=500, detail="Internal processing error") from e
 
 
@@ -604,6 +563,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,
+        reload=True,
         log_level="info" if DEBUG else "warning",
     )

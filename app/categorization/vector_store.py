@@ -53,17 +53,14 @@ class VectorStoreManager:
         
         print(f"🔍 DEBUG: Initializing ChromaDB with persist_path: {self.persist_path}")
 
-        # Check if directory is writable
+        # Ensure directory exists with proper permissions
         try:
             os.makedirs(self.persist_path, exist_ok=True)
-            # Test write permissions
-            test_file = os.path.join(self.persist_path, "test_write.tmp")
-            with open(test_file, 'w') as f:
-                f.write("test")
-            os.remove(test_file)
-            print(f"✅ DEBUG: Directory {self.persist_path} is writable")
-        except Exception as e:
-            print(f"❌ DEBUG: Directory {self.persist_path} is NOT writable: {e}")
+            # Set permissions to allow writing
+            os.chmod(self.persist_path, 0o777)
+            print(f"✅ DEBUG: Created/verified directory: {self.persist_path}")
+        except PermissionError as e:
+            print(f"⚠️ Permission error creating vector store directory {self.persist_path}: {e}")
             # Try to use a fallback directory
             fallback_path = "/tmp/vector_store"
             os.makedirs(fallback_path, exist_ok=True)
@@ -87,7 +84,7 @@ class VectorStoreManager:
 
     async def create_embedding(self, text: str) -> List[float]:
         """
-        Create embedding for text using OpenAI.
+        Create embedding for text using OpenAI API.
 
         Args:
             text: Text to embed
@@ -99,12 +96,6 @@ class VectorStoreManager:
             response = await self.openai_client.embeddings.create(
                 model=self.embedding_model, input=text
             )
-            print(f"🔍 DEBUG: Response keys: {list(response.__dict__.keys())}")
-            embedding = response.data[0].embedding
-            print(
-                f"🔍 DEBUG: Response data embedding (first 5 values): {embedding[:5]}"
-            )
-            print(f"🔍 DEBUG: Embedding length: {len(embedding)}")
             return response.data[0].embedding
         except Exception as e:
             raise Exception(f"Failed to create embedding: {e}") from e
@@ -135,7 +126,6 @@ class VectorStoreManager:
         print(f"💾 DEBUG: Storing transaction {transaction_id} for user {user_id} with category {category}")
 
         # Create embedding from transaction description
-        print(f"🔍 DEBUG: Creating embedding for description: {transaction.description}")
         embedding = await self.create_embedding(transaction.description)
 
         # Prepare metadata
@@ -146,58 +136,34 @@ class VectorStoreManager:
             "category": category,
             "stored_at": datetime.utcnow().isoformat(),
         }
-        print(f"🔍 DEBUG: Prepared metadata: {metadata}")
 
         # Store in ChromaDB
-        print(f"🔍 DEBUG: Adding to ChromaDB collection...")
         try:
-            # Get current count before adding
             count_before = self.collection.count()
-            print(f"🔍 DEBUG: Documents in collection before: {count_before}")
             
-            # Get all existing IDs to check for conflicts
+            # Check for existing ID
             all_results = self.collection.get()
             existing_ids = all_results.get("ids", [])
-            print(f"🔍 DEBUG: Existing IDs in collection: {existing_ids}")
             
             if transaction_id in existing_ids:
                 print(f"⚠️ DEBUG: Transaction ID {transaction_id} already exists!")
-                # Generate new ID
                 transaction_id = f"{user_id}_{uuid.uuid4().hex[:8]}"
                 metadata["transaction_id"] = transaction_id
                 print(f"🔍 DEBUG: Generated new ID: {transaction_id}")
             
-            # Try to add with explicit error handling
-            try:
-                self.collection.add(
-                    embeddings=[embedding],
-                    documents=[transaction.description],
-                    metadatas=[metadata],
-                    ids=[transaction_id],
-                )
-                print(f"✅ DEBUG: Successfully called collection.add() for {transaction_id}")
-            except Exception as add_error:
-                print(f"❌ DEBUG: Error in collection.add(): {add_error}")
-                raise
+            # Add to collection
+            self.collection.add(
+                embeddings=[embedding],
+                documents=[transaction.description],
+                metadatas=[metadata],
+                ids=[transaction_id],
+            )
             
-            # Get count after adding
             count_after = self.collection.count()
-            print(f"🔍 DEBUG: Documents in collection after: {count_after}")
-            
-            # Verify the document was actually added
-            try:
-                verify_results = self.collection.get(ids=[transaction_id])
-                if verify_results["ids"]:
-                    print(f"✅ DEBUG: Transaction {transaction_id} verified in collection")
-                else:
-                    print(f"❌ DEBUG: Transaction {transaction_id} NOT found in collection after adding!")
-            except Exception as verify_error:
-                print(f"❌ DEBUG: Error verifying transaction: {verify_error}")
-            
             if count_after > count_before:
-                print(f"✅ DEBUG: Successfully added transaction {transaction_id} to ChromaDB (count increased)")
+                print(f"✅ DEBUG: Successfully added transaction {transaction_id} to ChromaDB")
             else:
-                print(f"⚠️ DEBUG: Transaction added but count didn't increase - possible issue")
+                print(f"⚠️ DEBUG: Transaction added but count didn't increase")
             
         except Exception as e:
             print(f"❌ DEBUG: Failed to add to ChromaDB: {e}")
@@ -213,14 +179,11 @@ class VectorStoreManager:
         """
         print(f"🔍 DEBUG: search_similar_transactions called with description='{description}'")
         
-        # First, try exact text match - simplified approach
+        # First, try exact text match
         try:
-            # Get all transactions for this user first
             all_user_transactions = self.collection.get(
                 where={"user_id": user_id}
             )
-            
-            print(f"🔍 DEBUG: Exact matches result: {all_user_transactions}")
             
             # Filter for exact matches
             exact_matches = []
@@ -233,7 +196,7 @@ class VectorStoreManager:
                         "transaction_id": metadata["transaction_id"],
                         "user_id": metadata["user_id"],
                         "stored_at": metadata["stored_at"],
-                        "similarity_score": 1.0,  # Exact match
+                        "similarity_score": 1.0,
                         "match_type": "exact"
                     })
             
@@ -248,18 +211,14 @@ class VectorStoreManager:
         
         # If no exact matches, try vector similarity
         try:
-            # Generate embedding for the description
             embedding = await self.create_embedding(description)
             
-            # Search for similar transactions
             results = self.collection.query(
                 query_embeddings=[embedding],
                 where={"user_id": user_id},
                 n_results=limit,
                 include=["metadatas", "documents", "distances"]
             )
-            
-            print(f"🔍 DEBUG: Vector similarity results: {results}")
             
             similar_transactions = []
             if results["ids"] and results["ids"][0]:
@@ -268,8 +227,6 @@ class VectorStoreManager:
                     document = results["documents"][0][i]
                     distance = results["distances"][0][i]
                     
-                    # Convert distance to similarity score (ensure it's always positive)
-                    # Use max(0, 1 - distance) to ensure similarity_score >= 0
                     similarity_score = max(0.0, 1.0 - distance)
                     
                     similar_transactions.append({
@@ -337,22 +294,16 @@ class VectorStoreManager:
         Returns:
             List of user transactions
         """
-        print(
-            f"🔍 DEBUG: get_user_transactions called for user_id='{user_id}', limit={limit}"
-        )
+        print(f"🔍 DEBUG: get_user_transactions called for user_id='{user_id}', limit={limit}")
 
-        # Query by user_id in metadata
-        print(f"🔍 DEBUG: Querying ChromaDB collection for user_id='{user_id}'")
         try:
             results = self.collection.get(where={"user_id": user_id}, limit=limit)
-            print(f"🔍 DEBUG: ChromaDB query results: {results}")
         except Exception as e:
             print(f"❌ DEBUG: Failed to query ChromaDB: {e}")
             raise
 
         transactions = []
         if results["metadatas"]:
-            print(f"🔍 DEBUG: Found {len(results['metadatas'])} metadata entries")
             for i, metadata in enumerate(results["metadatas"]):
                 transactions.append(
                     {
@@ -363,12 +314,8 @@ class VectorStoreManager:
                         "stored_at": metadata["stored_at"],
                     }
                 )
-        else:
-            print(f"🔍 DEBUG: No metadata found in results")
 
-        print(
-            f"✅ DEBUG: Found {len(transactions)} transactions in ChromaDB for user {user_id}"
-        )
+        print(f"✅ DEBUG: Found {len(transactions)} transactions in ChromaDB for user {user_id}")
         return transactions
 
     async def delete_transaction(self, user_id: str, transaction_id: str) -> bool:

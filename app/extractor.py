@@ -104,29 +104,20 @@ class TransactionExtractor:
             )
 
     async def process_with_categorization(
-        self,
-        pdf_bytes: bytes,
+        self, 
+        pdf_bytes: bytes, 
         user_categories: UserCategories,
         filename: str = "document",
-        confidence_threshold: float = 0.3,
+        confidence_threshold: float = 0.3
     ) -> CategorizationResponse:
         """
         Process a PDF invoice, extract transactions, and categorize them.
         """
-        print(f"🔍 DEBUG: process_with_categorization called")
-
         # First, extract transactions using existing logic
         extraction_result = await self.process_invoice(pdf_bytes, filename)
-
-        print(f"🔍 DEBUG: Extraction completed")
-        print(f"🔍 DEBUG: Transactions count: {len(extraction_result.transactions)}")
-        print(f"🔍 DEBUG: Has errors: {extraction_result.errors is not None}")
-
-        # If extraction failed, return error response
+        
         if extraction_result.errors:
-            print(
-                f"🔍 DEBUG: Extraction failed with errors: {extraction_result.errors}"
-            )
+            # Return error response with extraction data
             return CategorizationResponse(
                 session_id="error_session",
                 user_id=user_categories.user_id,
@@ -134,39 +125,21 @@ class TransactionExtractor:
                 categorized_transactions=[],
             )
 
-        # Categorize transactions
         try:
-            print(f"🔍 DEBUG: Starting categorization...")
-            print(f"🔍 DEBUG: Creating CategorizationService...")
             categorization_service = CategorizationService()
-            print(f"🔍 DEBUG: CategorizationService created successfully")
 
             # Convert transactions to CategorizedTransaction format
             categorized_transactions = []
-            print(
-                f"🔍 DEBUG: Starting to process {len(extraction_result.transactions)} transactions"
-            )
 
             for i, transaction in enumerate(extraction_result.transactions):
-                print(
-                    f"🔍 DEBUG: Processing transaction {i}: '{transaction.description}'"
-                )
                 try:
                     # Categorize the transaction directly
-                    cat_tx = (
-                        await categorization_service._categorize_single_transaction(
-                            transaction=transaction,
-                            user_categories=user_categories,
-                            transaction_id=f"extracted_{i}",
-                            confidence_threshold=confidence_threshold,
-                        )
+                    cat_tx = await categorization_service._categorize_single_transaction(
+                        transaction=transaction,
+                        user_categories=user_categories,
+                        transaction_id=f"extracted_{i}",
+                        confidence_threshold=confidence_threshold,
                     )
-
-                    print(
-                        f"🔍 DEBUG: Categorization result: category='{cat_tx.category}', confidence={cat_tx.confidence_score}"
-                    )
-
-                    
 
                     categorized_transactions.append(
                         CategorizedTransaction(
@@ -183,10 +156,6 @@ class TransactionExtractor:
                     print(f"🔍 DEBUG: Error categorizing transaction {i}: {e}")
                     raise
 
-            print(
-                f"🔍 DEBUG: All transactions processed, creating categorization request..."
-            )
-
             # Create new categorization request
             categorization_request = CategorizationRequest(
                 user_id=user_categories.user_id,
@@ -195,18 +164,13 @@ class TransactionExtractor:
                 confidence_threshold=confidence_threshold,
             )
 
-            print(f"🔍 DEBUG: Calling categorization service...")
-            categorization_result = await categorization_service.categorization(
-                categorization_request
-            )
-            print(f"🔍 DEBUG: Categorization completed successfully")
+            categorization_result = await categorization_service.categorization(categorization_request)
 
             return categorization_result
 
         except Exception as e:
             print(f"🔍 DEBUG: Error in categorization: {e}")
             import traceback
-
             print(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
             # Return error response with extraction data
             return CategorizationResponse(
