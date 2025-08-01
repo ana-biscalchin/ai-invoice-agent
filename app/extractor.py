@@ -113,26 +113,41 @@ class TransactionExtractor:
         """
         Process a PDF invoice, extract transactions, and categorize them.
         """
+        print(f"🔍 DEBUG: Starting process_with_categorization for user {user_categories.user_id}")
+        
         # First, extract transactions using existing logic
         extraction_result = await self.process_invoice(pdf_bytes, filename)
         
-        if extraction_result.errors:
-            # Return error response with extraction data
+        print(f"🔍 DEBUG: Extraction completed. Errors: {extraction_result.errors}")
+        print(f"🔍 DEBUG: Transactions extracted: {len(extraction_result.transactions)}")
+        
+        # Check if we have transactions to process, even with validation errors
+        if not extraction_result.transactions:
+            print(f"❌ DEBUG: No transactions extracted, returning error session")
             return CategorizationResponse(
                 session_id="error_session",
                 user_id=user_categories.user_id,
                 confidence_threshold=confidence_threshold,
                 categorized_transactions=[],
             )
+        
+        # If we have transactions, process them even with validation errors
+        # Validation errors are warnings, not fatal errors
+        if extraction_result.errors:
+            print(f"⚠️ DEBUG: Validation errors found but proceeding with categorization")
+            print(f"🔍 DEBUG: Validation errors: {extraction_result.errors}")
 
         try:
+            print(f"🔍 DEBUG: Initializing CategorizationService...")
             categorization_service = CategorizationService()
+            print(f"🔍 DEBUG: CategorizationService initialized successfully")
 
             # Convert transactions to CategorizedTransaction format
             categorized_transactions = []
 
             for i, transaction in enumerate(extraction_result.transactions):
                 try:
+                    print(f"🔍 DEBUG: Categorizing transaction {i}: {transaction.description[:50]}...")
                     # Categorize the transaction directly
                     cat_tx = await categorization_service._categorize_single_transaction(
                         transaction=transaction,
@@ -152,10 +167,14 @@ class TransactionExtractor:
                             created_at=cat_tx.created_at,
                         )
                     )
+                    print(f"✅ DEBUG: Transaction {i} categorized successfully")
                 except Exception as e:
-                    print(f"🔍 DEBUG: Error categorizing transaction {i}: {e}")
+                    print(f"❌ DEBUG: Error categorizing transaction {i}: {e}")
+                    import traceback
+                    print(f"🔍 DEBUG: Transaction {i} traceback: {traceback.format_exc()}")
                     raise
 
+            print(f"🔍 DEBUG: All transactions categorized. Creating categorization request...")
             # Create new categorization request
             categorization_request = CategorizationRequest(
                 user_id=user_categories.user_id,
@@ -164,14 +183,16 @@ class TransactionExtractor:
                 confidence_threshold=confidence_threshold,
             )
 
+            print(f"🔍 DEBUG: Calling categorization service...")
             categorization_result = await categorization_service.categorization(categorization_request)
+            print(f"✅ DEBUG: Categorization completed successfully")
 
             return categorization_result
 
         except Exception as e:
-            print(f"🔍 DEBUG: Error in categorization: {e}")
+            print(f"❌ DEBUG: Error in categorization: {e}")
             import traceback
-            print(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
+            print(f"🔍 DEBUG: Full traceback: {traceback.format_exc()}")
             # Return error response with extraction data
             return CategorizationResponse(
                 session_id="error_session",

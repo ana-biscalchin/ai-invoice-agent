@@ -556,6 +556,67 @@ async def _save_input_data(content: bytes, filename: str, provider: str) -> None
         logger.warning(f"Failed to save input data: {e}")
 
 
+@app.get("/v1/debug/system-status")
+async def debug_system_status():
+    """
+    Debug endpoint to check system status.
+    """
+    try:
+        status = {
+            "vector_store": {},
+            "openai": {},
+            "environment": {
+                "VECTOR_STORE_PATH": os.getenv("VECTOR_STORE_PATH"),
+                "OPENAI_API_KEY": "***" if os.getenv("OPENAI_API_KEY") else "NOT_SET",
+                "ENVIRONMENT": os.getenv("ENVIRONMENT"),
+            }
+        }
+        
+        # Test vector store
+        try:
+            categorization_service = CategorizationService()
+            vector_store = categorization_service.vector_store
+            
+            # Test collection access
+            count = vector_store.collection.count()
+            stats = vector_store.get_collection_stats()
+            
+            status["vector_store"] = {
+                "status": "healthy",
+                "collection_count": count,
+                "persist_path": vector_store.persist_path,
+                "stats": stats
+            }
+        except Exception as e:
+            status["vector_store"] = {
+                "status": "error",
+                "error": str(e)
+            }
+        
+        # Test OpenAI
+        try:
+            categorization_service = CategorizationService()
+            # Test embedding creation
+            test_embedding = await categorization_service.vector_store.create_embedding("test")
+            status["openai"] = {
+                "status": "healthy",
+                "embedding_length": len(test_embedding)
+            }
+        except Exception as e:
+            status["openai"] = {
+                "status": "error", 
+                "error": str(e)
+            }
+        
+        return status
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
 if __name__ == "__main__":
     import uvicorn
 
