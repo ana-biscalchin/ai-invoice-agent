@@ -22,10 +22,23 @@ class PDFProcessor:
         """Initialize PDF processor."""
         self.logger = logger
         # Use environment variable for output directory, fallback to data/preprocessed
-        output_path = os.getenv("PREPROCESSED_FILES_PATH", "data/preprocessed")
-        self.output_dir = Path(output_path)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.logger.info(f"PDF processor initialized with output directory: {self.output_dir.absolute()}")
+        # output_path = os.getenv("PREPROCESSED_FILES_PATH", "data/preprocessed")
+        # self.output_dir = Path(output_path)
+        
+        # # Ensure directory exists with proper permissions
+        # try:
+        #     self.output_dir.mkdir(parents=True, exist_ok=True)
+        #     # Set permissions to allow writing
+        #     os.chmod(self.output_dir, 0o777)
+        # except PermissionError as e:
+        #     self.logger.warning(f"Permission error creating directory {self.output_dir}: {e}")
+        #     # Try to use a fallback directory
+        #     fallback_dir = Path("/tmp/extracted_texts")
+        #     fallback_dir.mkdir(parents=True, exist_ok=True)
+        #     self.output_dir = fallback_dir
+        #     self.logger.info(f"Using fallback directory: {self.output_dir}")
+        
+        # self.logger.info(f"PDF processor initialized with output directory: {self.output_dir.absolute()}")
 
     def extract_text(
         self, pdf_bytes: bytes, filename: str = "document"
@@ -54,7 +67,7 @@ class PDFProcessor:
             self.logger.info(f"Text cleaned: {len(cleaned_text)} characters")
 
             # Save extracted text to file
-            self._save_text_to_file(cleaned_text, filename, institution)
+            # self._save_text_to_file(cleaned_text, filename, institution)
 
             return cleaned_text, institution
 
@@ -264,27 +277,51 @@ class PDFProcessor:
 
         return len(line.replace(" ", "")) < 3
 
-    def _save_text_to_file(self, text: str, filename: str, institution: str) -> None:
-        """Save extracted text to a .txt file in data/preprocessed directory."""
-        try:
-            # Create filename with timestamp and institution
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_filename = re.sub(r'[^\w\-_.]', '_', filename)
-            txt_filename = f"{safe_filename}_{institution}_{timestamp}.txt"
-            file_path = self.output_dir / txt_filename
+    # def _save_text_to_file(self, text: str, filename: str, institution: str) -> None:
+    #     """Save extracted text to a .txt file in data/preprocessed directory."""
+    #     try:
+    #         # Create filename with timestamp and institution
+    #         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #         safe_filename = re.sub(r'[^\w\-_.]', '_', filename)
+    #         txt_filename = f"{safe_filename}_{institution}_{timestamp}.txt"
+    #         file_path = self.output_dir / txt_filename
 
-            # Save text to file
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(f"# Extracted from: {filename}\n")
-                f.write(f"# Institution: {institution}\n")
-                f.write(f"# Extraction date: {datetime.now().isoformat()}\n")
-                f.write(f"# Text length: {len(text)} characters\n")
-                f.write("-" * 80 + "\n\n")
-                f.write(text)
+    #         # Ensure parent directory exists
+    #         file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            self.logger.info(f"Text saved to: {file_path}")
-        except Exception as e:
-            self.logger.warning(f"Failed to save text to file: {e}")
+    #         # Save text to file
+    #         with open(file_path, 'w', encoding='utf-8') as f:
+    #             f.write(f"# Extracted from: {filename}\n")
+    #             f.write(f"# Institution: {institution}\n")
+    #             f.write(f"# Extraction date: {datetime.now().isoformat()}\n")
+    #             f.write(f"# Text length: {len(text)} characters\n")
+    #             f.write("-" * 80 + "\n\n")
+    #             f.write(text)
+
+    #         # Set file permissions
+    #         try:
+    #             os.chmod(file_path, 0o666)
+    #         except Exception as perm_error:
+    #             self.logger.debug(f"Could not set file permissions: {perm_error}")
+
+    #         self.logger.info(f"Text saved to: {file_path}")
+    #     except PermissionError as e:
+    #         self.logger.warning(f"Permission denied saving text to file: {e}")
+    #         # Try to save to /tmp as fallback
+    #         try:
+    #             fallback_path = Path("/tmp") / txt_filename
+    #             with open(fallback_path, 'w', encoding='utf-8') as f:
+    #                 f.write(f"# Extracted from: {filename}\n")
+    #                 f.write(f"# Institution: {institution}\n")
+    #                 f.write(f"# Extraction date: {datetime.now().isoformat()}\n")
+    #                 f.write(f"# Text length: {len(text)} characters\n")
+    #                 f.write("-" * 80 + "\n\n")
+    #                 f.write(text)
+    #             self.logger.info(f"Text saved to fallback location: {fallback_path}")
+    #         except Exception as fallback_error:
+    #             self.logger.error(f"Failed to save text even to fallback location: {fallback_error}")
+    #     except Exception as e:
+    #         self.logger.warning(f"Failed to save text to file: {e}")
 
     def validate_pdf(self, pdf_bytes: bytes) -> bool:
         """Validate if the file is a valid PDF."""

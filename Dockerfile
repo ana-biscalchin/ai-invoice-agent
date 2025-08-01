@@ -38,8 +38,12 @@ RUN poetry config virtualenvs.create false \
 
 # Create non-root user with matching UID/GID
 RUN groupadd -g ${GROUP_ID} appgroup \
-    && useradd -u ${USER_ID} -g ${GROUP_ID} -d /home/appuser -m -s /bin/bash appuser \
-    && chown -R appuser:appgroup /app
+    && useradd -u ${USER_ID} -g ${GROUP_ID} -d /home/appuser -m -s /bin/bash appuser
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /app/extracted_texts /app/vector_store \
+    && chown -R appuser:appgroup /app \
+    && chmod -R 755 /app/extracted_texts /app/vector_store
 
 USER appuser
 

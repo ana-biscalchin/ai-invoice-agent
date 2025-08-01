@@ -56,6 +56,95 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 docker-compose up -d
 ```
 
+## Troubleshooting
+
+### Permission Issues with Docker
+
+If you encounter permission errors when running the application in Docker, particularly with the `extracted_texts` directory, follow these steps:
+
+#### Problem
+
+```
+WARNING - Permission error creating directory /app/extracted_texts: [Errno 1] Operation not permitted
+```
+
+#### Solution
+
+1. **Set environment variables for user permissions:**
+
+```bash
+export USER_ID=1000
+export GROUP_ID=1000
+```
+
+2. **Fix directory permissions on host:**
+
+```bash
+sudo chown -R 1000:1000 extracted_texts/
+```
+
+3. **Rebuild and restart containers:**
+
+```bash
+docker-compose down
+docker-compose build
+docker-compose up -d
+```
+
+4. **Verify the fix:**
+
+```bash
+# Check if container can write to directory
+docker exec ai-invoice-agent-api touch /app/extracted_texts/test.txt
+
+# Check logs for permission errors
+docker logs ai-invoice-agent-api
+```
+
+#### Alternative Solutions
+
+If the above doesn't work, try these alternatives:
+
+1. **Run container as root (not recommended for production):**
+
+```yaml
+# In docker-compose.yml, comment out the user line:
+# user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+```
+
+2. **Use a different directory:**
+
+```env
+# In .env file, change the path:
+PREPROCESSED_FILES_PATH=/tmp/extracted_texts
+```
+
+3. **Create directory with correct permissions in Dockerfile:**
+
+```dockerfile
+# Add to Dockerfile before USER appuser:
+RUN mkdir -p /app/extracted_texts /app/vector_store \
+    && chown -R appuser:appgroup /app \
+    && chmod -R 755 /app/extracted_texts /app/vector_store
+```
+
+### Common Issues
+
+#### Container can't write to mounted volumes
+
+- **Cause**: Volume ownership mismatch between host and container
+- **Solution**: Set correct USER_ID/GROUP_ID environment variables
+
+#### PDF processing fails
+
+- **Cause**: Missing Tesseract dependencies
+- **Solution**: Ensure all system dependencies are installed in Dockerfile
+
+#### AI provider errors
+
+- **Cause**: Invalid or missing API keys
+- **Solution**: Check `.env` file and verify API keys are valid
+
 ## Testing
 
 ```bash
@@ -313,3 +402,18 @@ poetry add --group dev ipdb
 4. **Optimize performance** (caching, connection pooling)
 5. **Add new providers** (Claude)
 6. **Integration** with main finance system
+
+example user_categories:
+{
+"user_id": "ana-test",
+"categories": [
+"Lazer",
+"Alimentação",
+"Transporte",
+"Saúde",
+"Educação",
+"Cuidados Pessoais",
+"Farmácia",
+"Papelaria"
+]
+}

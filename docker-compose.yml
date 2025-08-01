@@ -14,5 +14,23 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-      - ./extracted_texts:/app/extracted_texts
+      - ./extracted_texts:/app/extracted_texts:rw
+      - vector_store_data:/app/vector_store:rw
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     restart: unless-stopped
+    environment:
+      - VECTOR_STORE_PATH=/app/vector_store
+      - CHROMA_PERSIST_DIRECTORY=/app/vector_store
+    command: >
+      sh -c "
+        echo '🔧 Setting up persistent vector store...' &&
+        mkdir -p /app/vector_store &&
+        chmod 777 /app/vector_store &&
+        chown -R appuser:appgroup /app/vector_store &&
+        echo '✅ Vector store directory ready' &&
+        python app/main.py
+      "
+
+volumes:
+  vector_store_data:
+    driver: local

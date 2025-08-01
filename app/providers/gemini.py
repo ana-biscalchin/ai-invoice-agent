@@ -68,7 +68,6 @@ class GeminiProvider(AIProvider):
                 ),
             )
 
-            print(response.text)
 
             data = parse_json_response(response.text, "Gemini")
 
